@@ -295,6 +295,7 @@
 <script>
 import is from '@/utils/is';
 import { confirm } from '@tauri-apps/plugin-dialog';
+import { invoke } from '@tauri-apps/api/core';
 import { mapState } from 'vuex';
 import { cloneDeep, extend, isEmpty } from 'lodash';
 import SubnavSwitcher from '@/components/Subnav/SubnavSwitcher.vue';
@@ -575,12 +576,7 @@ export default {
           ...changedConfig.advanced,
         };
 
-        const {
-          autoHideWindow,
-          btAutoDownloadContent,
-          btTracker,
-          rpcListenPort,
-        } = data;
+        const { btAutoDownloadContent, btTracker, rpcListenPort } = data;
 
         if ('btAutoDownloadContent' in data) {
           data.followTorrent = btAutoDownloadContent;
@@ -601,6 +597,22 @@ export default {
         this.$store
           .dispatch('preference/save', data)
           .then(() => {
+            // 运行模式（托盘是否创建 / Dock 图标是否显示）由 Rust 侧读 user.json 再应用，
+            // 所以必须等配置落盘之后再调（见 src-tauri/src/run_mode.rs）
+            if ('runMode' in data) {
+              invoke('apply_run_mode').catch((err) => {
+                console.warn('[Motr] apply run mode fail:', err);
+              });
+            }
+
+            // 开机自启同理：由 Rust 侧读 user.json 后改写系统登录项
+            //（见 src-tauri/src/auto_launch.rs）
+            if ('openAtLogin' in data) {
+              invoke('apply_auto_launch').catch((err) => {
+                console.warn('[Motr] apply auto launch fail:', err);
+              });
+            }
+
             this.$store.dispatch('app/fetchEngineOptions');
             this.syncFormConfig();
             this.$msg.success(this.$t('preferences.save-success-message'));
@@ -614,13 +626,8 @@ export default {
         changedConfig.advanced = {};
 
         if (this.isRenderer) {
-          if ('autoHideWindow' in data) {
-            this.$electron.ipcRenderer.send(
-              'command',
-              'application:auto-hide-window',
-              autoHideWindow
-            );
-          }
+          // 「自动隐藏窗口」不需要通知主进程：Rust 侧在窗口失焦时现读 user.json
+          //（见 src-tauri/src/window.rs），保存后立即生效
 
           if (checkIsNeedRestart(data)) {
             this.$electron.ipcRenderer.send('command', 'application:relaunch');

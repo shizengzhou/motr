@@ -30,14 +30,8 @@ export const TASK_STATUS = {
   SEEDING: 'seeding',
 };
 
-export const LOG_LEVELS = [
-  'error',
-  'warn',
-  'info',
-  'verbose',
-  'debug',
-  'silly',
-];
+// 原项目还带 verbose / silly 两级，Rust 的 log 没有这两级，移植版去掉了
+export const LOG_LEVELS = ['error', 'warn', 'info', 'debug'];
 
 export const MAX_NUM_OF_DIRECTORIES = 5;
 

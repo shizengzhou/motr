@@ -1,5 +1,5 @@
 use tauri::{
-    AppHandle, Manager,
+    AppHandle,
     image::Image,
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
 };
@@ -24,7 +24,7 @@ pub fn init(app: &AppHandle) -> tauri::Result<()> {
                 ..
             } = event
             {
-                show_main_window(tray.app_handle());
+                crate::window::show_main_window(tray.app_handle());
             }
         })
         // 右键菜单由 menu 模块按 src-tauri/resources/menus/tray.json 构建后挂上
@@ -58,19 +58,17 @@ fn pad_for_tray(content: &Image<'_>) -> Image<'static> {
     Image::new_owned(rgba, width, height + pad as u32 * 2)
 }
 
-/// 把渲染进程画好的「图标 + 上下行速率」PNG 换成托盘图标。
+/// 把渲染进程画好的「图标 + 上下行速率」PNG 换成托盘图标（命令在 commands.rs）。
 /// 和原 Electron 版一致：canvas 在渲染进程画，这边只负责 setImage。
-#[tauri::command]
-pub fn set_tray_speedometer(app: AppHandle, png: Vec<u8>) -> Result<(), String> {
-    let content = Image::from_bytes(&png).map_err(|err| format!("解析托盘速率图失败: {err}"))?;
-    apply_icon(&app, pad_for_tray(&content))
+pub(crate) fn set_speedometer(app: &AppHandle, png: &[u8]) -> Result<(), String> {
+    let content = Image::from_bytes(png).map_err(|err| format!("解析托盘速率图失败: {err}"))?;
+    apply_icon(app, pad_for_tray(&content))
 }
 
-/// 恢复静态图标（关掉「托盘显示实时速度」、组件卸载时由前端调用）
-#[tauri::command]
-pub fn reset_tray_icon(app: AppHandle) -> Result<(), String> {
+/// 恢复静态托盘图标（关掉「托盘显示实时速度」、组件卸载时由前端调用）
+pub(crate) fn reset_icon(app: &AppHandle) -> Result<(), String> {
     let icon = Image::from_bytes(STATIC_ICON).map_err(|err| format!("解析托盘图标失败: {err}"))?;
-    apply_icon(&app, icon)
+    apply_icon(app, icon)
 }
 
 fn apply_icon(app: &AppHandle, icon: Image<'_>) -> Result<(), String> {
@@ -87,19 +85,6 @@ fn apply_icon(app: &AppHandle, icon: Image<'_>) -> Result<(), String> {
         .map_err(|err| err.to_string())?;
 
     Ok(())
-}
-
-/// 显示并聚焦主窗口（托盘左键、菜单里的 application:show 都用它）
-pub(crate) fn show_main_window(app: &AppHandle) {
-    // macOS: 应用被 hide 掉时窗口不会出现，需要先 unhide
-    #[cfg(target_os = "macos")]
-    let _ = app.show();
-
-    if let Some(window) = app.get_webview_window("main") {
-        let _ = window.show();
-        let _ = window.unminimize();
-        let _ = window.set_focus();
-    }
 }
 
 #[cfg(test)]

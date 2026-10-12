@@ -708,12 +708,7 @@ export default {
           ...changedConfig.basic,
         };
 
-        const {
-          autoHideWindow,
-          btAutoDownloadContent,
-          btTracker,
-          rpcListenPort,
-        } = data;
+        const { btAutoDownloadContent, btTracker, rpcListenPort } = data;
 
         if ('btAutoDownloadContent' in data) {
           data.followTorrent = btAutoDownloadContent;
@@ -746,13 +741,8 @@ export default {
         changedConfig.advanced = {};
 
         if (this.isRenderer) {
-          if ('autoHideWindow' in data) {
-            this.$electron.ipcRenderer.send(
-              'command',
-              'application:auto-hide-window',
-              autoHideWindow
-            );
-          }
+          // 「自动隐藏窗口」不需要通知主进程：Rust 侧在窗口失焦时现读 user.json
+          //（见 src-tauri/src/window.rs），保存后立即生效
 
           if (checkIsNeedRestart(data)) {
             this.$electron.ipcRenderer.send('command', 'application:relaunch');

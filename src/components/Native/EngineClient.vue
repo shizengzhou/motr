@@ -4,10 +4,33 @@
 
 <script>
 import { mapState } from 'vuex';
+import { getCurrentWindow, ProgressBarStatus } from '@tauri-apps/api/window';
 import is from '@/utils/is';
 import api from '@/api';
 import { getTaskFullPath, showItemInFolder } from '@/utils/native';
-import { checkTaskIsBT, getTaskName } from '@shared/utils';
+import { bytesToSize, checkTaskIsBT, getTaskName } from '@shared/utils';
+
+// app store 里的 progress 直接喂给窗口 API，数值语义与原 Electron 版一致：
+// -1（没有活跃任务）→ 清除；>1（原版的 2，进度未知）→ Windows 不确定态、其它平台 0；0~1 → 汇总进度百分比
+const progressBarState = (progress) => {
+  if (progress < 0) {
+    return { status: ProgressBarStatus.None };
+  }
+
+  if (progress > 1) {
+    return {
+      progress: 0,
+      status: is.windows()
+        ? ProgressBarStatus.Indeterminate
+        : ProgressBarStatus.Normal,
+    };
+  }
+
+  return {
+    progress: Math.round(progress * 100),
+    status: ProgressBarStatus.Normal,
+  };
+};
 
 export default {
   name: 'mo-engine-client',
@@ -31,6 +54,7 @@ export default {
     }),
     ...mapState('preference', {
       taskNotification: (state) => state.config.taskNotification,
+      showProgressBar: (state) => state.config.showProgressBar,
     }),
     currentTaskIsBT() {
       return checkTaskIsBT(this.currentTaskItem);
@@ -38,11 +62,21 @@ export default {
   },
   watch: {
     speed() {
-      const { uploadSpeed, downloadSpeed } = this;
-      this.$electron.ipcRenderer.send('event', 'speed-change', {
-        uploadSpeed,
-        downloadSpeed,
-      });
+      // Dock 上显示下载速率（对齐原 Electron 版 DockManager.handleSpeedChange：
+      // 只有 macOS 显示，速率为 0 时清空 badge）
+      if (!is.macOS()) {
+        return;
+      }
+
+      const { downloadSpeed } = this;
+      const label =
+        downloadSpeed > 0 ? `${bytesToSize(downloadSpeed)}/s` : undefined;
+
+      getCurrentWindow()
+        .setBadgeLabel(label)
+        .catch((err) => {
+          console.warn('[Motr] update dock speed fail:', err);
+        });
     },
     downloading(val, oldVal) {
       if (val !== oldVal && this.isRenderer) {
@@ -50,7 +84,28 @@ export default {
       }
     },
     progress(val) {
-      this.$electron.ipcRenderer.send('event', 'progress-change', val);
+      // 进度条：原版由主进程按 show-progress-bar 决定是否响应，这里在唯一的出口判断
+      if (!this.showProgressBar) {
+        return;
+      }
+
+      getCurrentWindow()
+        .setProgressBar(progressBarState(val))
+        .catch((err) => {
+          console.warn('[Motr] set task progress fail:', err);
+        });
+    },
+    showProgressBar(val) {
+      // 关掉开关时立即清除（对应原版 unbindProgressChange 里的 setProgressBar(-1)）
+      if (val) {
+        return;
+      }
+
+      getCurrentWindow()
+        .setProgressBar({ status: ProgressBarStatus.None })
+        .catch((err) => {
+          console.warn('[Motr] clear task progress fail:', err);
+        });
     },
   },
   methods: {

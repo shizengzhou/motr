@@ -16,13 +16,27 @@ import Icon from '@/components/Icons/Icon.vue';
 import Msg from '@/components/Msg';
 import { commands } from '@/components/CommandManager/instance';
 import TrayWorker from '@/workers/tray.worker?worker';
+import { APP_RUN_MODE } from '@shared/constants';
 
 import '@/components/Theme/Index.scss';
+
+// 速率计是否该生效：与 App.vue 的 enableTraySpeedometer 同一套判断。
+// 关开关时组件会卸载（并恢复静态图标），但 worker 里可能还有一次「已画完」
+// 的消息在路上；若照旧转发，刚恢复的静态图标又会被速率图盖回去，
+// 表现出来就是「速率先消失又出现」，而且组件已卸载、没人再撤销它。
+const traySpeedometerEnabled = () =>
+  is.macOS() &&
+  store.state.preference.config.traySpeedometer === true &&
+  store.state.preference.config.runMode !== APP_RUN_MODE.HIDE_TRAY;
 
 // 速率计：渲染进程把「图标 + 上下行速率」画成图（见 workers/tray.worker.js），
 // 这里把它交给 Rust 设成托盘图标（等价原 Electron 版的 application:update-tray）
 const updateTray = is.isTauri()
   ? async (payload) => {
+      if (!traySpeedometerEnabled()) {
+        return;
+      }
+
       const { tray } = payload;
       if (!tray) {
         return;

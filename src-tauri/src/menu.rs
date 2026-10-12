@@ -112,7 +112,11 @@ fn collect_actions(nodes: &[MenuNode], actions: &mut HashMap<String, MenuAction>
             .as_deref()
             .is_some_and(|role| local_role_step(role).is_some());
 
-        if let Some(id) = node.id.as_ref().filter(|_| node.command.is_some() || local_role) {
+        if let Some(id) = node
+            .id
+            .as_ref()
+            .filter(|_| node.command.is_some() || local_role)
+        {
             actions.insert(
                 id.clone(),
                 MenuAction {
@@ -137,12 +141,6 @@ pub fn init(app: &AppHandle) {
     if let Err(err) = apply(app, &config_locale(app)) {
         log::error!("[Motr] 构建菜单失败: {err}");
     }
-}
-
-/// 切换语言后重建菜单（前端 locale 变化时调用，只传语言值，菜单数据都在资源里）
-#[tauri::command]
-pub fn rebuild_menus(app: AppHandle, locale: String) -> Result<(), String> {
-    apply(&app, &locale)
 }
 
 /// 菜单点击：应用菜单和托盘菜单都走这里。
@@ -208,9 +206,12 @@ fn plan(action: &MenuAction) -> Vec<MenuStep> {
         match command {
             // 原项目 application:show 的 page 参数只用来选窗口（同时负责把窗口显示出来）；
             // 本项目只有一个主窗口，所以就是"显示并聚焦"
-            "application:show" => {
-                MenuStep::Show(params.get("page").and_then(Value::as_str).map(str::to_string))
-            }
+            "application:show" => MenuStep::Show(
+                params
+                    .get("page")
+                    .and_then(Value::as_str)
+                    .map(str::to_string),
+            ),
             "application:open-file" => MenuStep::OpenFile,
             "application:quit" => MenuStep::Quit,
             // 帮助菜单里的链接，原项目是主进程的 help:* 处理
@@ -270,7 +271,7 @@ fn local_role_step(role: &str) -> Option<MenuStep> {
 fn run_step(app: &AppHandle, step: &MenuStep) {
     match step {
         MenuStep::Show(page) => {
-            crate::tray::show_main_window(app);
+            crate::window::show_main_window(app);
             log::info!("[Motr] application:show (page: {page:?})");
         }
         MenuStep::OpenFile => pick_torrent_file(app),
@@ -360,7 +361,8 @@ fn torrent_payload(path: &Path) -> Result<Value, String> {
         return Err(format!("不是种子文件: {}", path.display()));
     }
 
-    let bytes = std::fs::read(path).map_err(|err| format!("读取 {} 失败: {err}", path.display()))?;
+    let bytes =
+        std::fs::read(path).map_err(|err| format!("读取 {} 失败: {err}", path.display()))?;
     let name = path
         .file_name()
         .and_then(|name| name.to_str())
@@ -406,7 +408,8 @@ fn parse_query(query: &str) -> Map<String, Value> {
         .collect()
 }
 
-fn apply(app: &AppHandle, locale: &str) -> Result<(), String> {
+/// 按语言重建 App 菜单与托盘菜单（命令在 commands.rs）
+pub(crate) fn apply(app: &AppHandle, locale: &str) -> Result<(), String> {
     let dir = menus_dir(app)?;
     if !dir.is_dir() {
         return Err(format!("菜单资源目录不存在: {}", dir.display()));
@@ -839,10 +842,7 @@ mod tests {
         let find = |value: &Value, id: &str| -> String {
             fn walk(node: &Value, id: &str) -> Option<String> {
                 if node.get("id").and_then(Value::as_str) == Some(id) {
-                    return node
-                        .get("text")
-                        .and_then(Value::as_str)
-                        .map(str::to_string);
+                    return node.get("text").and_then(Value::as_str).map(str::to_string);
                 }
                 node.get("submenu")
                     .and_then(Value::as_array)
@@ -1082,7 +1082,13 @@ mod tests {
             collect_actions(&read_nodes(SOURCE_LOCALE, file), &mut actions);
         }
 
-        for id in ["task.new-task", "task.open-file", "app.preferences", "app.show", "help.manual"] {
+        for id in [
+            "task.new-task",
+            "task.open-file",
+            "app.preferences",
+            "app.show",
+            "help.manual",
+        ] {
             assert!(actions.contains_key(id), "动作表里缺少 {id}");
         }
 
@@ -1090,11 +1096,16 @@ mod tests {
         fn assert_collected(value: &Value, actions: &HashMap<String, MenuAction>) {
             match value {
                 Value::Array(items) => {
-                    items.iter().for_each(|item| assert_collected(item, actions));
+                    items
+                        .iter()
+                        .for_each(|item| assert_collected(item, actions));
                 }
                 Value::Object(map) => {
                     if let Some(command) = map.get("command").and_then(Value::as_str) {
-                        let id = map.get("id").and_then(Value::as_str).expect("带 command 的项要有 id");
+                        let id = map
+                            .get("id")
+                            .and_then(Value::as_str)
+                            .expect("带 command 的项要有 id");
                         assert_eq!(
                             actions.get(id).and_then(|action| action.command.as_deref()),
                             Some(command),
@@ -1109,15 +1120,22 @@ mod tests {
             }
         }
         for file in MENU_FILES {
-            assert_collected(&read_json(&menus_root().join(SOURCE_LOCALE).join(file)), &actions);
+            assert_collected(
+                &read_json(&menus_root().join(SOURCE_LOCALE).join(file)),
+                &actions,
+            );
         }
 
         assert_eq!(
-            actions.get("task.new-bt-task").map(|action| action.command_arg.clone()),
+            actions
+                .get("task.new-bt-task")
+                .map(|action| action.command_arg.clone()),
             Some(Some(json!({ "type": "torrent" })))
         );
         assert_eq!(
-            actions.get("task.open-file").and_then(|action| action.command_before.clone()),
+            actions
+                .get("task.open-file")
+                .and_then(|action| action.command_before.clone()),
             Some("application:show?page=index".to_string()),
             "打开种子文件要先显示窗口"
         );
@@ -1195,7 +1213,10 @@ mod tests {
         );
 
         // 纯显示窗口
-        assert_eq!(plan(&with_command("application:show")), vec![MenuStep::Show(None)]);
+        assert_eq!(
+            plan(&with_command("application:show")),
+            vec![MenuStep::Show(None)]
+        );
 
         // 帮助菜单里的链接
         assert_eq!(
@@ -1206,7 +1227,10 @@ mod tests {
         );
 
         // 退出
-        assert_eq!(plan(&with_command("application:quit")), vec![MenuStep::Quit]);
+        assert_eq!(
+            plan(&with_command("application:quit")),
+            vec![MenuStep::Quit]
+        );
 
         // 只有 role、没有 command：Tauri 缺的预定义项由 Rust 实现
         assert_eq!(
@@ -1217,11 +1241,13 @@ mod tests {
             vec![MenuStep::ToggleDevTools]
         );
         // 系统自己处理的 role（quit 等）不会走到这里，plan 里也不该凭空造出步骤
-        assert!(plan(&MenuAction {
-            role: Some("quit".to_string()),
-            ..Default::default()
-        })
-        .is_empty());
+        assert!(
+            plan(&MenuAction {
+                role: Some("quit".to_string()),
+                ..Default::default()
+            })
+            .is_empty()
+        );
     }
 
     /// 托盘菜单不挂快捷键；App 菜单照旧（同一批命令在两种菜单里表现不同）
@@ -1276,13 +1302,21 @@ mod tests {
         // App 菜单：role: quit（Tauri 有预定义项），不进动作表
         for file in ["darwin.json", "win32.json", "linux.json"] {
             let nodes = read_nodes(SOURCE_LOCALE, file);
-            let quit = find_node(&nodes, "app.quit").unwrap_or_else(|| panic!("{file} 里没有 app.quit"));
-            assert_eq!(quit.role.as_deref(), Some("quit"), "{file} 的退出应该用 role");
+            let quit =
+                find_node(&nodes, "app.quit").unwrap_or_else(|| panic!("{file} 里没有 app.quit"));
+            assert_eq!(
+                quit.role.as_deref(),
+                Some("quit"),
+                "{file} 的退出应该用 role"
+            );
             assert_eq!(quit.command, None, "{file} 的退出不该配 command");
 
             let mut actions = HashMap::new();
             collect_actions(&nodes, &mut actions);
-            assert!(actions.get("app.quit").is_none(), "{file}: 系统 role 不该进动作表");
+            assert!(
+                actions.get("app.quit").is_none(),
+                "{file}: 系统 role 不该进动作表"
+            );
         }
     }
 
@@ -1298,7 +1332,11 @@ mod tests {
         ] {
             for file in ["darwin.json", "win32.json", "linux.json"] {
                 let steps = plan(&action_of(SOURCE_LOCALE, file, id));
-                assert_eq!(steps, vec![MenuStep::OpenUrl { url }], "{file} 里 {id} 的计划不对");
+                assert_eq!(
+                    steps,
+                    vec![MenuStep::OpenUrl { url }],
+                    "{file} 里 {id} 的计划不对"
+                );
             }
         }
 

@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager, Runtime};
-use tauri_plugin_store::Store;
+use tauri_plugin_store::{Store, StoreExt};
 
 use crate::context::Context;
 
@@ -314,11 +314,22 @@ impl ProxyScope {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 pub enum AppRunMode {
     Standard = 1,
     Tray = 2,
     HideTray = 3,
+}
+
+impl AppRunMode {
+    /// 从 user.json 里的数值解析（未知值按默认 Standard，与原项目一致）
+    pub fn from_u8(mode: u8) -> Self {
+        match mode {
+            2 => Self::Tray,
+            3 => Self::HideTray,
+            _ => Self::Standard,
+        }
+    }
 }
 
 #[derive(Debug, Serialize)]
@@ -341,6 +352,64 @@ impl AppTheme {
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(default)]
 pub struct WindowState {}
+
+/// 设置页里的日志等级：读 user.json，缺键或读不到时按默认值（warn）
+///
+/// 只在启动时用一次（logging::init），所以设置页保存后下次启动生效。
+pub fn log_level<R: Runtime>(app_handle: &AppHandle<R>) -> String {
+    app_handle
+        .store("user.json")
+        .ok()
+        .and_then(|store| UserConfig::from_store(&store).ok())
+        .map(|config| config.log_level)
+        .unwrap_or_else(|| "warn".to_string())
+}
+
+/// 「恢复上次退出时的窗口大小和位置」是否开启：读 user.json，缺键或读不到时按默认值（false）
+///
+/// 只在启动时用一次（window::restore_state），所以设置页保存后下次启动生效。
+pub fn keep_window_state<R: Runtime>(app_handle: &AppHandle<R>) -> bool {
+    app_handle
+        .store("user.json")
+        .ok()
+        .and_then(|store| UserConfig::from_store(&store).ok())
+        .map(|config| config.keep_window_state)
+        .unwrap_or(false)
+}
+
+/// 「自动隐藏窗口」是否开启：读 user.json，缺键或读不到时按默认值（false）
+///
+/// 窗口失焦时现读现用，所以设置页保存后立刻生效，不需要前端额外通知。
+pub fn auto_hide_window_enabled<R: Runtime>(app_handle: &AppHandle<R>) -> bool {
+    app_handle
+        .store("user.json")
+        .ok()
+        .and_then(|store| UserConfig::from_store(&store).ok())
+        .map(|config| config.auto_hide_window)
+        .unwrap_or(false)
+}
+
+/// 「开机自动启动」是否开启：读 user.json，缺键或读不到时按默认值（false）
+pub fn open_at_login<R: Runtime>(app_handle: &AppHandle<R>) -> bool {
+    app_handle
+        .store("user.json")
+        .ok()
+        .and_then(|store| UserConfig::from_store(&store).ok())
+        .map(|config| config.open_at_login)
+        .unwrap_or(false)
+}
+
+/// 当前的运行模式：读 user.json，缺键或读不到时按默认值（Standard）
+///
+/// 与「自动隐藏窗口」一样现读现用：设置页保存后由前端调 `apply_run_mode` 立即生效。
+pub fn run_mode<R: Runtime>(app_handle: &AppHandle<R>) -> AppRunMode {
+    app_handle
+        .store("user.json")
+        .ok()
+        .and_then(|store| UserConfig::from_store(&store).ok())
+        .map(|config| AppRunMode::from_u8(config.run_mode))
+        .unwrap_or(AppRunMode::Standard)
+}
 
 pub fn is_macos() -> bool {
     #[cfg(target_os = "macos")]

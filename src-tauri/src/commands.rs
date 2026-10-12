@@ -4,6 +4,40 @@ use tauri_plugin_store::StoreExt;
 
 use crate::config_manager::{Config, SystemConfig, UserConfig};
 use crate::context::{Context, get_aria2_conf_path, get_session_path};
+use crate::{auto_launch, menu, run_mode, tray};
+
+/// 设置页保存后调用：让系统登录项与 user.json 里的 open-at-login 对齐
+#[tauri::command]
+pub fn apply_auto_launch(app: AppHandle) -> Result<(), String> {
+    auto_launch::apply(&app);
+    Ok(())
+}
+
+/// 切换语言后重建菜单（前端 locale 变化时调用，只传语言值，菜单数据都在资源里）
+#[tauri::command]
+pub fn rebuild_menus(app: AppHandle, locale: String) -> Result<(), String> {
+    menu::apply(&app, &locale)
+}
+
+/// 把渲染进程画好的「图标 + 上下行速率」PNG 换成托盘图标
+///（和原 Electron 版一致：canvas 在渲染进程画，这边只负责 setImage）
+#[tauri::command]
+pub fn set_tray_speedometer(app: AppHandle, png: Vec<u8>) -> Result<(), String> {
+    tray::set_speedometer(&app, &png)
+}
+
+/// 恢复静态托盘图标（关掉「托盘显示实时速度」、组件卸载时由前端调用）
+#[tauri::command]
+pub fn reset_tray_icon(app: AppHandle) -> Result<(), String> {
+    tray::reset_icon(&app)
+}
+
+/// 设置页保存后调用：按最新的 user.json 重新应用运行模式
+#[tauri::command]
+pub fn apply_run_mode(app: AppHandle) -> Result<(), String> {
+    run_mode::apply_from_config(&app);
+    Ok(())
+}
 
 #[tauri::command]
 pub async fn trash_item(path: String) -> Result<(), String> {
