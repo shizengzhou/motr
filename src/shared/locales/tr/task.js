@@ -89,7 +89,6 @@ export default {
   'resume-all-task-success': 'Bütün görevleri sürdürme başarılı',
   'resume-all-task-fail': 'Bütün görevleri sürdürme başarısız',
   'select-all-task': 'Tüm görevi seçin',
-  'clear-recent-tasks': 'Son görevleri temizle',
   'purge-record': 'Görev Kaydını Temizle',
   'purge-record-success': 'Görev Kaydını Temizleme başarılı',
   'purge-record-fail': 'Görev Kaydını Temizleme başarısız',

@@ -1,0 +1,73 @@
+{
+  "menu": [
+    {
+      "id": "menu.app", "text": "Motr",
+      "submenu": [
+        { "id": "app.about", "text": "O Motr", "command": "application:about", "command-before": "application:show?page=index" },
+        { "type": "separator" },
+        { "id": "app.preferences", "text": "Ustawienia...", "command": "application:preferences" },
+        { "id": "app.check-for-updates", "text": "Sprawdź aktualizacje...", "command": "application:check-for-updates" },
+        { "id": "app.hide", "text": "Schowaj Motr", "role": "hide" },
+        { "id": "app.hide-others", "text": "Schowaj pozostałe", "role": "hideothers" },
+        { "id": "app.unhide", "text": "Pokaż wszystkie", "role": "unhide" },
+        { "type": "separator" },
+        { "id": "app.quit", "text": "Opuść Motr", "role": "quit" }
+      ]
+    },
+    {
+      "id": "menu.task", "text": "Zadanie",
+      "submenu": [
+        { "id": "task.new-task", "text": "Nowe zadanie", "command": "application:new-task", "command-after": "application:show?page=index" },
+        { "id": "task.new-bt-task", "text": "Nowe zadanie Torrent", "command": "application:new-bt-task", "command-after": "application:show?page=index" },
+        { "id": "task.open-file", "text": "Otwórz plik torrent...", "command": "application:open-file", "command-before": "application:show?page=index" },
+        { "type": "separator" },
+        { "id": "app.task-list", "text": "Zadania", "command": "application:task-list" },
+        { "id": "task.pause-task", "text": "Zapauzuj", "command": "application:pause-task" },
+        { "id": "task.resume-task", "text": "Wznów zadanie", "command": "application:resume-task" },
+        { "id": "task.delete-task", "text": "Usuń zadanie", "command": "application:delete-task" },
+        { "id": "task.move-task-up", "text": "Przenieś zadanie do góry", "command": "application:move-task-up" },
+        { "id": "task.move-task-down", "text": "Przenieś zadanie do dołu", "command": "application:move-task-down" },
+        { "type": "separator" },
+        { "id": "task.pause-all-task", "text": "Wstrzymaj wszystkie zadania", "command": "application:pause-all-task" },
+        { "id": "task.resume-all-task", "text": "Wznów wszystkie zadania", "command": "application:resume-all-task" },
+        { "id": "task.select-all-task", "text": "Wybierz wszystkie zadania", "command": "application:select-all-task" }
+      ]
+    },
+    {
+      "id": "menu.edit", "text": "Edycja",
+      "submenu": [
+        { "id": "edit.undo", "text": "Cofnij", "role": "undo" },
+        { "id": "edit.redo", "text": "Ponów", "role": "redo" },
+        { "type": "separator" },
+        { "id": "edit.cut", "text": "Wytnij", "role": "cut" },
+        { "id": "edit.copy", "text": "Skopiuj", "role": "copy" },
+        { "id": "edit.paste", "text": "Wklej", "role": "paste" },
+        { "id": "edit.delete", "text": "Usuń", "role": "delete" },
+        { "id": "edit.select-all", "text": "Wybierz wszystkie ", "role": "selectall" }
+      ]
+    },
+    {
+      "id": "menu.window", "text": "Okno", "role": "window",
+      "submenu": [
+        { "id": "window.close", "text": "Zamknij", "role": "close" },
+        { "id": "window.minimize", "text": "Minimalizuj", "role": "minimize" },
+        { "id": "window.zoom", "text": "Powiększ", "role": "zoom" },
+        { "id": "window.toggle-fullscreen", "text": "Włącz tryb pełnoekranowy", "role": "togglefullscreen" },
+        { "type": "separator" },
+        { "id": "window.front", "text": "Przenieś wszystko na przód", "role": "front" }
+      ]
+    },
+    {
+      "id": "menu.help", "text": "Pomoc", "role": "help",
+      "submenu": [
+        { "id": "help.official-website", "text": "Oficjalna strona internetowa", "command": "help:official-website" },
+        { "id": "help.manual", "text": "Instrukcja", "command": "help:manual" },
+        { "id": "help.release-notes", "text": "Dziennik wydań...", "command": "help:release-notes" },
+        { "type": "separator" },
+        { "id": "help.report-problem", "text": "Zgłoś problem", "command": "help:report-problem" },
+        { "type": "separator" },
+        { "id": "help.toggle-dev-tools", "text": "Włącz narzędzia dla developerów", "role": "toggledevtools" }
+      ]
+    }
+  ]
+}

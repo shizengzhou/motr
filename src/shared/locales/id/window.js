@@ -1,5 +1,4 @@
 export default {
-  reload: 'Muat Ulang',
   close: 'Keluar',
   minimize: 'Perkecil',
   zoom: 'Zoom',

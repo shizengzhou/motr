@@ -1,0 +1,13 @@
+[
+  { "id": "task.new-task", "text": "Feladat hozzáadasa", "command": "application:new-task", "command-after": "application:show?page=index" },
+  { "id": "task.new-bt-task", "text": "Új BT Feladat hozzáadasa", "command": "application:new-bt-task", "command-arg": { "type": "torrent" }, "command-after": "application:show?page=index" },
+  { "id": "task.open-file", "text": "Torrent fájl megnyitása...", "command": "application:open-file", "command-before": "application:show?page=index" },
+  { "type": "separator" },
+  { "id": "app.show", "text": "Motr mutatása", "command": "application:show", "command-arg": { "page": "index" } },
+  { "id": "help.manual", "text": "Kézikönyv", "command": "help:manual" },
+  { "id": "app.check-for-updates", "text": "Frissitések keresése...", "command": "application:check-for-updates" },
+  { "type": "separator" },
+  { "id": "app.task-list", "text": "Feladatok", "command": "application:task-list", "command-before": "application:show?page=index" },
+  { "id": "app.preferences", "text": "Beálittasok...", "command": "application:preferences", "command-before": "application:show?page=index" },
+  { "id": "app.quit", "text": "Kilépés", "command": "application:quit" }
+]

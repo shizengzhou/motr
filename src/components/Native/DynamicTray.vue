@@ -9,6 +9,7 @@
 
 <script>
 import { mapState } from 'vuex';
+import { invoke } from '@tauri-apps/api/core';
 
 import { getInverseTheme } from '@shared/utils';
 import { APP_THEME } from '@shared/constants';
@@ -57,6 +58,13 @@ export default {
       await this.drawTray();
     }, 200);
   },
+  destroyed() {
+    // 关掉「托盘显示实时速度」或退出时，把托盘恢复成静态图标
+    // （原 Electron 版对应 TrayManager.handleSpeedometerEnableChange -> renderTray）
+    invoke('reset_tray_icon').catch((err) => {
+      console.warn('[Motr] reset tray icon fail:', err);
+    });
+  },
   methods: {
     async getIcon(key) {
       if (cache[key]) {
@@ -80,7 +88,14 @@ export default {
 
       const icon = await this.getIcon(iconKey);
 
-      global.app.trayWorker.postMessage({
+      // worker 由 pages/index/main.js 初始化后挂到 window.app 上
+      const worker = window.app && window.app.trayWorker;
+      if (!worker) {
+        console.warn('[Motr] tray worker 未就绪，跳过本次托盘绘制');
+        return;
+      }
+
+      worker.postMessage({
         type: 'tray:draw',
         payload: {
           theme,

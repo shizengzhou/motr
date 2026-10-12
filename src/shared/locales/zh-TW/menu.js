@@ -1,5 +1,5 @@
 export default {
-  app: 'Motrix',
+  app: 'Motr',
   file: '檔案',
   task: '任務',
   edit: '編輯',

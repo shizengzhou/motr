@@ -89,7 +89,6 @@ export default {
   'resume-all-task-success': 'Alle taken succesvol hervat',
   'resume-all-task-fail': 'Taken hervatten mislukt',
   'select-all-task': 'Selecteer alle taken',
-  'clear-recent-tasks': 'Verwijder recente taken',
   'purge-record': 'Taakrecord verwijderen',
   'purge-record-success': 'Taakrecord succesvol verwijderd',
   'purge-record-fail': 'Taakrecord kon niet worden verwijderd',

@@ -90,7 +90,6 @@ export default {
   'resume-all-task-success': 'Todas as tarefas foram resumidas com sucesso',
   'resume-all-task-fail': 'Falha ao resumir todas as tarefas',
   'select-all-task': 'Selecione todas as tarefas',
-  'clear-recent-tasks': 'Limpar todas as tarefas',
   'purge-record': 'Expurgar o Registro de Tarefas',
   'purge-record-success': 'O registro de tarefas foi expurgado com sucesso',
   'purge-record-fail': 'Falha ao expurgar o registro de tarefas',

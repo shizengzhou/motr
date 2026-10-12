@@ -90,7 +90,7 @@
             <div class="el-form-item__info" style="margin-top: 8px">
               <a
                 target="_blank"
-                href="https://github.com/agalwood/Motrix/wiki/Proxy"
+                href="https://github.com/agalwood/Motr/wiki/Proxy"
                 rel="noopener noreferrer"
               >
                 {{ $t('preferences.proxy-tips') }}
@@ -237,7 +237,7 @@
               <div class="el-form-item__info" style="margin-top: 8px">
                 <a
                   target="_blank"
-                  href="https://github.com/agalwood/Motrix/wiki/RPC"
+                  href="https://github.com/agalwood/Motr/wiki/RPC"
                   rel="noopener noreferrer"
                 >
                   {{ $t('preferences.rpc-secret-tips') }}
@@ -699,7 +699,7 @@ export default {
     submitForm(formName) {
       this.$refs[formName].validate((valid) => {
         if (!valid) {
-          console.error('[Motrix] preference form valid:', valid);
+          console.error('[Motr] preference form valid:', valid);
           return false;
         }
 
@@ -729,7 +729,7 @@ export default {
           data.rpcListenPort = this.rpcDefaultPort;
         }
 
-        console.log('[Motrix] preference changed data:', data);
+        console.log('[Motr] preference changed data:', data);
 
         this.$store
           .dispatch('preference/save', data)

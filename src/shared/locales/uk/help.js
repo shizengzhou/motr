@@ -1,5 +1,5 @@
 export default {
-  'official-website': 'Сайт Motrix',
+  'official-website': 'Сайт Motr',
   manual: 'Інструкція',
   'release-notes': 'Примітки до релизу...',
   'report-problem': 'Повідомити про проблему',

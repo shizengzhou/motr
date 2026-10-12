@@ -88,7 +88,6 @@ export default {
   'resume-all-task-success': 'Berhasil melanjutkan semua tugas',
   'resume-all-task-fail': 'Gagal melanjutkan semua tugas',
   'select-all-task': 'Pilih Semua Tugas',
-  'clear-recent-tasks': 'Bersihkan tugas terakhir',
   'purge-record': 'Bersihkan Catatan Tugas',
   'purge-record-success': 'Berhasil membersihkan catatan tugas',
   'purge-record-fail': 'Gagal membersihkan catatan tugas',

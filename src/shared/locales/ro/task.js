@@ -89,7 +89,6 @@ export default {
   'resume-all-task-success': 'S-au reluat cu succes toate sarcinile',
   'resume-all-task-fail': 'Nu s-au putut relua toate sarcinile',
   'select-all-task': 'Selectează Toate sarcinile',
-  'clear-recent-tasks': 'Șterge sarcinile recente',
   'purge-record': 'Șterge istoricul sarcinilor',
   'purge-record-success': 'Istoricul sarcinilor a fost șters',
   'purge-record-fail': 'Nu s-a putut șterge istoricul sarcinilor',

@@ -147,7 +147,7 @@
             <div class="help-link">
               <a
                 target="_blank"
-                href="https://github.com/agalwood/Motrix/wiki/Proxy"
+                href="https://github.com/agalwood/Motr/wiki/Proxy"
                 rel="noopener noreferrer"
               >
                 {{ $t('preferences.proxy-tips') }}
@@ -198,6 +198,7 @@
 
 <script>
 import is from '@/utils/is';
+import { readText } from '@tauri-apps/plugin-clipboard-manager';
 import { mapState } from 'vuex';
 import { isEmpty } from 'lodash';
 import HistoryDirectory from '@/components/Preference/HistoryDirectory.vue';
@@ -275,7 +276,7 @@ export default {
   },
   methods: {
     async autofillResourceLink() {
-      const content = await navigator.clipboard.readText();
+      const content = await readText();
       const hasResource = detectResource(content);
       if (!hasResource) {
         return;
@@ -369,7 +370,7 @@ export default {
       } else if (type === 'metalink') {
         // @TODO addMetalink
       } else {
-        console.error('[Motrix] Add task fail', form);
+        console.error('[Motr] Add task fail', form);
       }
     },
     submitForm(formName) {

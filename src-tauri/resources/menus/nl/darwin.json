@@ -1,0 +1,73 @@
+{
+  "menu": [
+    {
+      "id": "menu.app", "text": "Motr",
+      "submenu": [
+        { "id": "app.about", "text": "Over Motr", "command": "application:about", "command-before": "application:show?page=index" },
+        { "type": "separator" },
+        { "id": "app.preferences", "text": "Voorkeuren...", "command": "application:preferences" },
+        { "id": "app.check-for-updates", "text": "Naar updates zoeken...", "command": "application:check-for-updates" },
+        { "id": "app.hide", "text": "Motr verbergen", "role": "hide" },
+        { "id": "app.hide-others", "text": "Verberg anderen", "role": "hideothers" },
+        { "id": "app.unhide", "text": "Laat alles zien", "role": "unhide" },
+        { "type": "separator" },
+        { "id": "app.quit", "text": "Motr afsluiten", "role": "quit" }
+      ]
+    },
+    {
+      "id": "menu.task", "text": "Taak",
+      "submenu": [
+        { "id": "task.new-task", "text": "Nieuwe taak", "command": "application:new-task", "command-after": "application:show?page=index" },
+        { "id": "task.new-bt-task", "text": "Nieuwe BT taak", "command": "application:new-bt-task", "command-after": "application:show?page=index" },
+        { "id": "task.open-file", "text": "Torrentbestand openen...", "command": "application:open-file", "command-before": "application:show?page=index" },
+        { "type": "separator" },
+        { "id": "app.task-list", "text": "Taken", "command": "application:task-list" },
+        { "id": "task.pause-task", "text": "Taak pauzeren", "command": "application:pause-task" },
+        { "id": "task.resume-task", "text": "Taak hervatten", "command": "application:resume-task" },
+        { "id": "task.delete-task", "text": "Taak verwijderen", "command": "application:delete-task" },
+        { "id": "task.move-task-up", "text": "Taak naar boven verplaatsen", "command": "application:move-task-up" },
+        { "id": "task.move-task-down", "text": "Taak naar beneden verplaatsen", "command": "application:move-task-down" },
+        { "type": "separator" },
+        { "id": "task.pause-all-task", "text": "Alle taken pauzeren", "command": "application:pause-all-task" },
+        { "id": "task.resume-all-task", "text": "Alle taken hervatten", "command": "application:resume-all-task" },
+        { "id": "task.select-all-task", "text": "Selecteer alle taken", "command": "application:select-all-task" }
+      ]
+    },
+    {
+      "id": "menu.edit", "text": "Bewerken",
+      "submenu": [
+        { "id": "edit.undo", "text": "Ongedaan maken", "role": "undo" },
+        { "id": "edit.redo", "text": "Opnieuw doen", "role": "redo" },
+        { "type": "separator" },
+        { "id": "edit.cut", "text": "Knipplen", "role": "cut" },
+        { "id": "edit.copy", "text": "Kopiëren", "role": "copy" },
+        { "id": "edit.paste", "text": "Plakken", "role": "paste" },
+        { "id": "edit.delete", "text": "Verwijderen", "role": "delete" },
+        { "id": "edit.select-all", "text": "Alles selecteren", "role": "selectall" }
+      ]
+    },
+    {
+      "id": "menu.window", "text": "Venster", "role": "window",
+      "submenu": [
+        { "id": "window.close", "text": "Sluiten", "role": "close" },
+        { "id": "window.minimize", "text": "Minimaliseren", "role": "minimize" },
+        { "id": "window.zoom", "text": "Zoomen", "role": "zoom" },
+        { "id": "window.toggle-fullscreen", "text": "Volledig scherm tonen", "role": "togglefullscreen" },
+        { "type": "separator" },
+        { "id": "window.front", "text": "Alles naar voorgrond brengen", "role": "front" }
+      ]
+    },
+    {
+      "id": "menu.help", "text": "Help", "role": "help",
+      "submenu": [
+        { "id": "help.official-website", "text": "Motr Website", "command": "help:official-website" },
+        { "id": "help.manual", "text": "Handleiding", "command": "help:manual" },
+        { "id": "help.release-notes", "text": "Versie informatie...", "command": "help:release-notes" },
+        { "type": "separator" },
+        { "id": "help.report-problem", "text": "Probleem melden", "command": "help:report-problem" },
+        { "type": "separator" },
+        { "id": "help.toggle-dev-tools", "text": "Ontwikkelaarstools aan/uit-schakelen", "role": "toggledevtools" }
+      ]
+    }
+  ]
+}

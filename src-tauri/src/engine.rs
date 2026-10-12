@@ -1,12 +1,15 @@
 use std::{collections::HashMap, path::Path, sync::Mutex};
 
-use tauri::{AppHandle, Manager, path::BaseDirectory::Resource};
+use tauri::{AppHandle, Manager};
 use tauri_plugin_shell::{
     ShellExt,
     process::{CommandChild, CommandEvent},
 };
 
-use crate::config_manager::Config;
+use crate::{
+    config_manager::Config,
+    context::{get_aria2_conf_path, get_session_path},
+};
 
 #[derive(Default)]
 pub struct EngineChild(pub Mutex<Option<CommandChild>>);
@@ -37,19 +40,19 @@ pub fn start(app_handle: &AppHandle, config: &Config) -> Result<(), String> {
             match event {
                 CommandEvent::Stdout(line) => {
                     log::info!(
-                        "[Motrix] engine stdout===> {}",
+                        "[Motr] engine stdout===> {}",
                         String::from_utf8_lossy(&line)
                     )
                 }
                 CommandEvent::Stderr(line) => {
                     log::warn!(
-                        "[Motrix] engine stderr===> {}",
+                        "[Motr] engine stderr===> {}",
                         String::from_utf8_lossy(&line)
                     )
                 }
                 CommandEvent::Terminated(payload) => {
                     log::info!(
-                        "[Motrix] engine terminated: code={:?} signal={:?}",
+                        "[Motr] engine terminated: code={:?} signal={:?}",
                         payload.code,
                         payload.signal
                     );
@@ -64,11 +67,11 @@ pub fn start(app_handle: &AppHandle, config: &Config) -> Result<(), String> {
 }
 
 pub fn stop(app_handle: &AppHandle) {
-    log::info!("[Motrix] engine.stop");
+    log::info!("[Motr] engine.stop");
 
     if let Some(child) = app_handle.state::<EngineChild>().0.lock().unwrap().take() {
         if let Err(e) = child.kill() {
-            log::warn!("[Motrix] engine.stop failed: {e}");
+            log::warn!("[Motr] engine.stop failed: {e}");
         }
     }
 }
@@ -125,25 +128,6 @@ pub fn transform_config(config: &HashMap<String, serde_json::Value>) -> Vec<Stri
         .collect()
 }
 
-pub fn get_session_path(app_handle: &AppHandle) -> String {
-    app_handle
-        .path()
-        .app_data_dir()
-        .unwrap()
-        .join("download.session")
-        .to_string_lossy()
-        .to_string()
-}
-
-pub fn get_aria2_conf_path(app_handle: &AppHandle) -> String {
-    app_handle
-        .path()
-        .resolve("resources/aria2.conf", Resource)
-        .unwrap()
-        .to_string_lossy()
-        .to_string()
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -157,7 +141,7 @@ mod tests {
             json!("/Users/me/Library/Application Support/com.shizeng.Motr/dht.dat"),
         );
         config.insert("dir".to_string(), json!("/Users/me/Downloads"));
-        config.insert("user-agent".to_string(), json!("Motrix/1.0"));
+        config.insert("user-agent".to_string(), json!("Motr/1.0"));
         config.insert("continue".to_string(), json!(true));
         config.insert("rpc-listen-port".to_string(), json!(16800));
         config.insert("all-proxy".to_string(), json!(""));
@@ -173,7 +157,7 @@ mod tests {
                     .to_string(),
                 "--dir=/Users/me/Downloads".to_string(),
                 "--rpc-listen-port=16800".to_string(),
-                "--user-agent=Motrix/1.0".to_string(),
+                "--user-agent=Motr/1.0".to_string(),
             ]
         );
     }

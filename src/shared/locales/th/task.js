@@ -86,7 +86,6 @@ export default {
   'resume-all-task-success': 'กลับมาทำงานทั้งหมดต่อได้สำเร็จ',
   'resume-all-task-fail': 'ไม่สามารถทำงานทั้งหมดต่อได้',
   'select-all-task': 'เลือกงานทั้งหมด',
-  'clear-recent-tasks': 'ล้างงานล่าสุด',
   'purge-record': 'ล้างบันทึกงาน',
   'purge-record-success': 'ลบบันทึกงานเรียบร้อยแล้ว',
   'purge-record-fail': 'ไม่สามารถล้างบันทึกงาน',

@@ -1,0 +1,13 @@
+[
+  { "id": "task.new-task", "text": "新規タスク", "command": "application:new-task", "command-after": "application:show?page=index" },
+  { "id": "task.new-bt-task", "text": "新規torrentタスク", "command": "application:new-bt-task", "command-arg": { "type": "torrent" }, "command-after": "application:show?page=index" },
+  { "id": "task.open-file", "text": "torrentファイルを開く...", "command": "application:open-file", "command-before": "application:show?page=index" },
+  { "type": "separator" },
+  { "id": "app.show", "text": "Show Motr", "command": "application:show", "command-arg": { "page": "index" } },
+  { "id": "help.manual", "text": "使用説明", "command": "help:manual" },
+  { "id": "app.check-for-updates", "text": "更新を確認...", "command": "application:check-for-updates" },
+  { "type": "separator" },
+  { "id": "app.task-list", "text": "タスクリスト", "command": "application:task-list", "command-before": "application:show?page=index" },
+  { "id": "app.preferences", "text": "環境設定...", "command": "application:preferences", "command-before": "application:show?page=index" },
+  { "id": "app.quit", "text": "Motr を終了", "command": "application:quit" }
+]

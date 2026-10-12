@@ -1,5 +1,4 @@
 export default {
-  reload: '다시 불러오기',
   close: '닫기',
   minimize: '최소화',
   zoom: '확대',

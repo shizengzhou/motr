@@ -88,7 +88,6 @@ export default {
   'resume-all-task-success': 'Tải lại tất cả tác vụ thành công',
   'resume-all-task-fail': 'Tải lại tất cả tác vụ thất bại',
   'select-all-task': 'Chọn tất cả tác vụ',
-  'clear-recent-tasks': 'Xóa các tác vụ gần đây',
   'purge-record': 'Làm mới bản ghi tác vụ',
   'purge-record-success': 'Làm mới bản ghi tác vụ thành công',
   'purge-record-fail': 'Làm mới tản ghi tác vụ thất bại',

@@ -1,5 +1,4 @@
 export default {
-  reload: 'بارگزاری مجدد',
   close: 'بستن',
   minimize: 'کمینه',
   zoom: 'بزرگنمایی',

@@ -1,0 +1,13 @@
+[
+  { "id": "task.new-task", "text": "Tác vụ mới", "command": "application:new-task", "command-after": "application:show?page=index" },
+  { "id": "task.new-bt-task", "text": "Tác vụ BT mới", "command": "application:new-bt-task", "command-arg": { "type": "torrent" }, "command-after": "application:show?page=index" },
+  { "id": "task.open-file", "text": "Mở tệp Torrent...", "command": "application:open-file", "command-before": "application:show?page=index" },
+  { "type": "separator" },
+  { "id": "app.show", "text": "Hiển thị Motr", "command": "application:show", "command-arg": { "page": "index" } },
+  { "id": "help.manual", "text": "Hướng dẫn sử dụng", "command": "help:manual" },
+  { "id": "app.check-for-updates", "text": "Kiểm tra cập nhật...", "command": "application:check-for-updates" },
+  { "type": "separator" },
+  { "id": "app.task-list", "text": "Danh sách Tác vụ", "command": "application:task-list", "command-before": "application:show?page=index" },
+  { "id": "app.preferences", "text": "Cài đặt...", "command": "application:preferences", "command-before": "application:show?page=index" },
+  { "id": "app.quit", "text": "Thoát Motr", "command": "application:quit" }
+]

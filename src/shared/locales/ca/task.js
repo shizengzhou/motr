@@ -92,7 +92,6 @@ export default {
   'resume-all-task-success': "S'han resumit amb èxit totes les tasques",
   'resume-all-task-fail': 'Hi ha hagut un error en resumir totes les tasques',
   'select-all-task': 'Seleccioneu tota la tasca',
-  'clear-recent-tasks': 'Limpiar les darreres tasques',
   'purge-record': 'Purgar registre de tasques',
   'purge-record-success': 'Registres de tasques purgats amb èxit',
   'purge-record-fail': "No s'ha pogut purgar els registres de tasques",

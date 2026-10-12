@@ -89,7 +89,6 @@ export default {
   'resume-all-task-success': 'Alle Aufgaben erfolgreich fortgesetzt',
   'resume-all-task-fail': 'Fortsetzen aller Aufgaben fehlgeschlagen',
   'select-all-task': 'Wählen Sie alle Aufgaben aus',
-  'clear-recent-tasks': 'Letzte Aufgaben entfernen',
   'purge-record': 'Aufgaben Protokoll löschen',
   'purge-record-success': 'Aufgabenprotokoll erfolgreich gelöscht',
   'purge-record-fail': 'Aufgabenprotokoll konnte nicht gelöscht werden',

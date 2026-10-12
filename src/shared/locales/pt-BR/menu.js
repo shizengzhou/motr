@@ -1,5 +1,5 @@
 export default {
-  app: 'Motrix',
+  app: 'Motr',
   file: 'Arquivo',
   task: 'Tarefa',
   edit: 'Editar',

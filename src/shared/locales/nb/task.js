@@ -88,7 +88,6 @@ export default {
   'resume-all-task-success': 'Gjenopptatt alle oppgaver',
   'resume-all-task-fail': 'Kunne ikke gjenoppta alle oppgaver',
   'select-all-task': 'Velg alle oppgaver',
-  'clear-recent-tasks': 'Fjern siste oppgaver',
   'purge-record': 'Tøm oppgavelogg',
   'purge-record-success': 'Tømming av oppgavelogger var vellykket',
   'purge-record-fail': 'Kunne ikke tømme oppgavelogger',

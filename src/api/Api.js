@@ -95,18 +95,18 @@ export default class Api {
     const config = {};
 
     if (!isEmpty(user)) {
-      console.info('[Motrix] save user config: ', user);
+      console.info('[Motr] save user config: ', user);
       config.user = user;
     }
 
     if (!isEmpty(system)) {
-      console.info('[Motrix] save system config: ', system);
+      console.info('[Motr] save system config: ', system);
       config.system = system;
       this.updateActiveTaskOption(system);
     }
 
     if (!isEmpty(others)) {
-      console.info('[Motrix] save config found illegal key: ', others);
+      console.info('[Motr] save config found illegal key: ', others);
     }
 
     const systemStore = new LazyStore('system.json');
@@ -222,12 +222,12 @@ export default class Api {
           ['aria2.tellWaiting', ...waitingArgs],
         ])
         .then((data) => {
-          console.log('[Motrix] fetch downloading task list data:', data);
+          console.log('[Motr] fetch downloading task list data:', data);
           const result = mergeTaskResult(data);
           resolve(result);
         })
         .catch((err) => {
-          console.log('[Motrix] fetch downloading task list fail:', err);
+          console.log('[Motr] fetch downloading task list fail:', err);
           reject(err);
         });
     });
@@ -282,17 +282,17 @@ export default class Api {
           ['aria2.getPeers', ...peersArgs],
         ])
         .then((data) => {
-          console.log('[Motrix] fetchTaskItemWithPeers:', data);
+          console.log('[Motr] fetchTaskItemWithPeers:', data);
           const result = data[0] && data[0][0];
           const peers = data[1] && data[1][0];
           result.peers = peers || [];
-          console.log('[Motrix] fetchTaskItemWithPeers.result:', result);
-          console.log('[Motrix] fetchTaskItemWithPeers.peers:', peers);
+          console.log('[Motr] fetchTaskItemWithPeers.result:', result);
+          console.log('[Motr] fetchTaskItemWithPeers.peers:', peers);
 
           resolve(result);
         })
         .catch((err) => {
-          console.log('[Motrix] fetch downloading task list fail:', err);
+          console.log('[Motr] fetch downloading task list fail:', err);
           reject(err);
         });
     });

@@ -1,5 +1,4 @@
 export default {
-  reload: '重新載入',
   close: '關閉',
   minimize: '最小化',
   zoom: '放大',

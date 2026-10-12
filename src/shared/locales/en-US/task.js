@@ -88,7 +88,6 @@ export default {
   'resume-all-task-success': 'Successfully resumed all tasks',
   'resume-all-task-fail': 'Failed to resume all tasks',
   'select-all-task': 'Select All Tasks',
-  'clear-recent-tasks': 'Clear Recent Tasks',
   'purge-record': 'Purge Task Record',
   'purge-record-success': 'Successfully purged task records',
   'purge-record-fail': 'Failed to purge task records',

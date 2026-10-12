@@ -1,0 +1,73 @@
+{
+  "menu": [
+    {
+      "id": "menu.app", "text": "Motr",
+      "submenu": [
+        { "id": "app.about", "text": "Σχετικά με το Motr", "command": "application:about", "command-before": "application:show?page=index" },
+        { "type": "separator" },
+        { "id": "app.preferences", "text": "Προτιμήσεις...", "command": "application:preferences" },
+        { "id": "app.check-for-updates", "text": "Έλεγχος για Ενημερώσεις...", "command": "application:check-for-updates" },
+        { "id": "app.hide", "text": "Κρύψε το Motr", "role": "hide" },
+        { "id": "app.hide-others", "text": "Κρύψε τα υπόλοιπα", "role": "hideothers" },
+        { "id": "app.unhide", "text": "Εμφάνιση όλων", "role": "unhide" },
+        { "type": "separator" },
+        { "id": "app.quit", "text": "Κλείσιμο του Motr", "role": "quit" }
+      ]
+    },
+    {
+      "id": "menu.task", "text": "Εργασία",
+      "submenu": [
+        { "id": "task.new-task", "text": "Νέα εργασία", "command": "application:new-task", "command-after": "application:show?page=index" },
+        { "id": "task.new-bt-task", "text": "Νέα εργασία BT", "command": "application:new-bt-task", "command-after": "application:show?page=index" },
+        { "id": "task.open-file", "text": "Άνοιγμα αρχείου Torrent ...", "command": "application:open-file", "command-before": "application:show?page=index" },
+        { "type": "separator" },
+        { "id": "app.task-list", "text": "Καθήκοντα", "command": "application:task-list" },
+        { "id": "task.pause-task", "text": "Παύση εργασίας", "command": "application:pause-task" },
+        { "id": "task.resume-task", "text": "Συνέχεια Εργασίας", "command": "application:resume-task" },
+        { "id": "task.delete-task", "text": "Διαγραφή εργασίας", "command": "application:delete-task" },
+        { "id": "task.move-task-up", "text": "Μεταφορά της Εργασίας Πάνω", "command": "application:move-task-up" },
+        { "id": "task.move-task-down", "text": "Μεταφορά της Εργασίας Κάτω", "command": "application:move-task-down" },
+        { "type": "separator" },
+        { "id": "task.pause-all-task", "text": "Παύση όλων τον εργασιών", "command": "application:pause-all-task" },
+        { "id": "task.resume-all-task", "text": "Συνέχεια όλων των εργασιών", "command": "application:resume-all-task" },
+        { "id": "task.select-all-task", "text": "Επιλογή όλων των εργασιών", "command": "application:select-all-task" }
+      ]
+    },
+    {
+      "id": "menu.edit", "text": "Επεξεργασία",
+      "submenu": [
+        { "id": "edit.undo", "text": "Αναίρεση", "role": "undo" },
+        { "id": "edit.redo", "text": "Ακύρωση Αναίρεσης", "role": "redo" },
+        { "type": "separator" },
+        { "id": "edit.cut", "text": "Αποκοπή", "role": "cut" },
+        { "id": "edit.copy", "text": "Αντιγραφή", "role": "copy" },
+        { "id": "edit.paste", "text": "Επικόλληση", "role": "paste" },
+        { "id": "edit.delete", "text": "Διαγραφή", "role": "delete" },
+        { "id": "edit.select-all", "text": "Επιλογή Όλων", "role": "selectall" }
+      ]
+    },
+    {
+      "id": "menu.window", "text": "Παράθυρο", "role": "window",
+      "submenu": [
+        { "id": "window.close", "text": "Κλείσιμο", "role": "close" },
+        { "id": "window.minimize", "text": "Ελαχιστοποίηση", "role": "minimize" },
+        { "id": "window.zoom", "text": "Ζουμ", "role": "zoom" },
+        { "id": "window.toggle-fullscreen", "text": "Είσοδος σε πλήρη οθόνη", "role": "togglefullscreen" },
+        { "type": "separator" },
+        { "id": "window.front", "text": "Εμφάνιση όλων μπροστά", "role": "front" }
+      ]
+    },
+    {
+      "id": "menu.help", "text": "Βοήθεια", "role": "help",
+      "submenu": [
+        { "id": "help.official-website", "text": "Ιστοσελίδα του Motr", "command": "help:official-website" },
+        { "id": "help.manual", "text": "Εγχειρίδιο Οδηγιών", "command": "help:manual" },
+        { "id": "help.release-notes", "text": "Σημειώσεις έκδοσης...", "command": "help:release-notes" },
+        { "type": "separator" },
+        { "id": "help.report-problem", "text": "Αναφέρετε ένα πρόβλημα", "command": "help:report-problem" },
+        { "type": "separator" },
+        { "id": "help.toggle-dev-tools", "text": "Εμφάνιση εργαλείων για προγραμματιστές", "role": "toggledevtools" }
+      ]
+    }
+  ]
+}

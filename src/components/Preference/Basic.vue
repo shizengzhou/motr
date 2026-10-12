@@ -566,7 +566,7 @@ export default {
     submitForm(formName) {
       this.$refs[formName].validate((valid) => {
         if (!valid) {
-          console.error('[Motrix] preference form valid:', valid);
+          console.error('[Motr] preference form valid:', valid);
           return false;
         }
 
@@ -596,7 +596,7 @@ export default {
           data.rpcListenPort = this.rpcDefaultPort;
         }
 
-        console.log('[Motrix] preference changed data:', data);
+        console.log('[Motr] preference changed data:', data);
 
         this.$store
           .dispatch('preference/save', data)
@@ -606,7 +606,7 @@ export default {
             this.$msg.success(this.$t('preferences.save-success-message'));
           })
           .catch((err) => {
-            console.log('[Motrix] preference save error:', err);
+            console.log('[Motr] preference save error:', err);
             this.$msg.success(this.$t('preferences.save-fail-message'));
           });
 

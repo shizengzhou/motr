@@ -1,5 +1,4 @@
 export default {
-  reload: 'Reîncărcă',
   close: 'Închide',
   minimize: 'Minimizează',
   zoom: 'Zoom',

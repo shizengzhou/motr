@@ -1,5 +1,4 @@
 export default {
-  reload: 'Επαναφόρτωση',
   close: 'Κλείσιμο',
   minimize: 'Ελαχιστοποίηση',
   zoom: 'Ζουμ',

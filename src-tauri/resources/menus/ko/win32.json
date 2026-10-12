@@ -1,0 +1,71 @@
+{
+  "menu": [
+    {
+      "id": "menu.file", "text": "파일",
+      "submenu": [
+        { "id": "app.about", "text": "Motr 정보", "command": "application:about", "command-before": "application:show?page=index" },
+        { "type": "separator" },
+        { "id": "app.preferences", "text": "설정...", "command": "application:preferences" },
+        { "id": "app.check-for-updates", "text": "업데이트 확인...", "command": "application:check-for-updates" },
+        { "id": "app.show", "text": "Motr 보기", "command": "application:show", "command-arg": { "page": "index" } },
+        { "type": "separator" },
+        { "id": "app.quit", "text": "Motr 종료", "role": "quit" }
+      ]
+    },
+    {
+      "id": "menu.task", "text": "작업",
+      "submenu": [
+        { "id": "task.new-task", "text": "새 작업", "command": "application:new-task", "command-after": "application:show?page=index" },
+        { "id": "task.new-bt-task", "text": "새 BT 작업", "command": "application:new-bt-task", "command-after": "application:show?page=index" },
+        { "id": "task.open-file", "text": "토렌트 파일 열기...", "command": "application:open-file", "command-before": "application:show?page=index" },
+        { "type": "separator" },
+        { "id": "app.task-list", "text": "작업 목록", "command": "application:task-list" },
+        { "id": "task.pause-task", "text": "작업 일시정지", "command": "application:pause-task" },
+        { "id": "task.resume-task", "text": "작업 재개", "command": "application:resume-task" },
+        { "id": "task.delete-task", "text": "작업 삭제", "command": "application:delete-task" },
+        { "id": "task.move-task-up", "text": "작업을 위로 이동", "command": "application:move-task-up" },
+        { "id": "task.move-task-down", "text": "작업을 아래로 이동", "command": "application:move-task-down" },
+        { "type": "separator" },
+        { "id": "task.pause-all-task", "text": "모든 작업 일시정지", "command": "application:pause-all-task" },
+        { "id": "task.resume-all-task", "text": "모든 작업 재개", "command": "application:resume-all-task" },
+        { "id": "task.select-all-task", "text": "모든 작업 선택", "command": "application:select-all-task" }
+      ]
+    },
+    {
+      "id": "menu.edit", "text": "편집",
+      "submenu": [
+        { "id": "edit.undo", "text": "실행 취소", "role": "undo" },
+        { "id": "edit.redo", "text": "다시 실행", "role": "redo" },
+        { "type": "separator" },
+        { "id": "edit.cut", "text": "잘라내기", "role": "cut" },
+        { "id": "edit.copy", "text": "복사", "role": "copy" },
+        { "id": "edit.paste", "text": "붙여넣기", "role": "paste" },
+        { "id": "edit.delete", "text": "삭제", "role": "delete" },
+        { "id": "edit.select-all", "text": "모두 선택", "role": "selectall" }
+      ]
+    },
+    {
+      "id": "menu.window", "text": "창", "role": "window",
+      "submenu": [
+        { "id": "window.close", "text": "닫기", "role": "close" },
+        { "id": "window.minimize", "text": "최소화", "role": "minimize" },
+        { "id": "window.zoom", "text": "확대", "role": "zoom" },
+        { "id": "window.toggle-fullscreen", "text": "전체 화면", "role": "togglefullscreen" },
+        { "type": "separator" },
+        { "id": "window.front", "text": "모두 앞으로 가져오기", "role": "front" }
+      ]
+    },
+    {
+      "id": "menu.help", "text": "도움말", "role": "help",
+      "submenu": [
+        { "id": "help.official-website", "text": "Motr 웹 사이트", "command": "help:official-website" },
+        { "id": "help.manual", "text": "매뉴얼", "command": "help:manual" },
+        { "id": "help.release-notes", "text": "릴리스 정보...", "command": "help:release-notes" },
+        { "type": "separator" },
+        { "id": "help.report-problem", "text": "문제 보고", "command": "help:report-problem" },
+        { "type": "separator" },
+        { "id": "help.toggle-dev-tools", "text": "개발자 도구", "role": "toggledevtools" }
+      ]
+    }
+  ]
+}

@@ -1,5 +1,4 @@
 export default {
-  reload: 'Recarregar',
   close: 'Fechar',
   minimize: 'Minimizar',
   zoom: 'Zoom',

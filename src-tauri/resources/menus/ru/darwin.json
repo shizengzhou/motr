@@ -1,0 +1,73 @@
+{
+  "menu": [
+    {
+      "id": "menu.app", "text": "Motr",
+      "submenu": [
+        { "id": "app.about", "text": "О Motr", "command": "application:about", "command-before": "application:show?page=index" },
+        { "type": "separator" },
+        { "id": "app.preferences", "text": "Настройки...", "command": "application:preferences" },
+        { "id": "app.check-for-updates", "text": "Проверить обновление...", "command": "application:check-for-updates" },
+        { "id": "app.hide", "text": "Спрятать Motr", "role": "hide" },
+        { "id": "app.hide-others", "text": "Спрятать все остальное", "role": "hideothers" },
+        { "id": "app.unhide", "text": "Отобразить все", "role": "unhide" },
+        { "type": "separator" },
+        { "id": "app.quit", "text": "Закрыть Motr", "role": "quit" }
+      ]
+    },
+    {
+      "id": "menu.task", "text": "Задания",
+      "submenu": [
+        { "id": "task.new-task", "text": "Новое задание", "command": "application:new-task", "command-after": "application:show?page=index" },
+        { "id": "task.new-bt-task", "text": "Новое BT задание", "command": "application:new-bt-task", "command-after": "application:show?page=index" },
+        { "id": "task.open-file", "text": "Открыть Torrent файл...", "command": "application:open-file", "command-before": "application:show?page=index" },
+        { "type": "separator" },
+        { "id": "app.task-list", "text": "Задачи", "command": "application:task-list" },
+        { "id": "task.pause-task", "text": "Приостановить задание", "command": "application:pause-task" },
+        { "id": "task.resume-task", "text": "Возобновить задание", "command": "application:resume-task" },
+        { "id": "task.delete-task", "text": "Удалить задание", "command": "application:delete-task" },
+        { "id": "task.move-task-up", "text": "Переместить задание вверх", "command": "application:move-task-up" },
+        { "id": "task.move-task-down", "text": "Переместить задание вниз", "command": "application:move-task-down" },
+        { "type": "separator" },
+        { "id": "task.pause-all-task", "text": "Приостановить все задания", "command": "application:pause-all-task" },
+        { "id": "task.resume-all-task", "text": "Возобновить все задания", "command": "application:resume-all-task" },
+        { "id": "task.select-all-task", "text": "Выберите все задачи", "command": "application:select-all-task" }
+      ]
+    },
+    {
+      "id": "menu.edit", "text": "Редактировать",
+      "submenu": [
+        { "id": "edit.undo", "text": "Отмена", "role": "undo" },
+        { "id": "edit.redo", "text": "Повторить", "role": "redo" },
+        { "type": "separator" },
+        { "id": "edit.cut", "text": "Вырезать", "role": "cut" },
+        { "id": "edit.copy", "text": "Копировать", "role": "copy" },
+        { "id": "edit.paste", "text": "Вставить", "role": "paste" },
+        { "id": "edit.delete", "text": "Удалить", "role": "delete" },
+        { "id": "edit.select-all", "text": "Выбрать все", "role": "selectall" }
+      ]
+    },
+    {
+      "id": "menu.window", "text": "Окно", "role": "window",
+      "submenu": [
+        { "id": "window.close", "text": "Закрыть", "role": "close" },
+        { "id": "window.minimize", "text": "Свернуть", "role": "minimize" },
+        { "id": "window.zoom", "text": "Увеличение", "role": "zoom" },
+        { "id": "window.toggle-fullscreen", "text": "Перейти в полноэкранный режим", "role": "togglefullscreen" },
+        { "type": "separator" },
+        { "id": "window.front", "text": "Поверх всех окон", "role": "front" }
+      ]
+    },
+    {
+      "id": "menu.help", "text": "Помощь", "role": "help",
+      "submenu": [
+        { "id": "help.official-website", "text": "Сайт Motr", "command": "help:official-website" },
+        { "id": "help.manual", "text": "Инструкция", "command": "help:manual" },
+        { "id": "help.release-notes", "text": "Пометки к релизу...", "command": "help:release-notes" },
+        { "type": "separator" },
+        { "id": "help.report-problem", "text": "Сообщить о проблеме", "command": "help:report-problem" },
+        { "type": "separator" },
+        { "id": "help.toggle-dev-tools", "text": "Переключить инструменты разработчика", "role": "toggledevtools" }
+      ]
+    }
+  ]
+}

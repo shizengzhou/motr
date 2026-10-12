@@ -1,0 +1,71 @@
+{
+  "menu": [
+    {
+      "id": "menu.file", "text": "ไฟล์",
+      "submenu": [
+        { "id": "app.about", "text": "เกี่ยวกับ Motr", "command": "application:about", "command-before": "application:show?page=index" },
+        { "type": "separator" },
+        { "id": "app.preferences", "text": "ปรับแต่ง...", "command": "application:preferences" },
+        { "id": "app.check-for-updates", "text": "ตรวจสอบการอัพเดต...", "command": "application:check-for-updates" },
+        { "id": "app.show", "text": "แสดง Motr", "command": "application:show", "command-arg": { "page": "index" } },
+        { "type": "separator" },
+        { "id": "app.quit", "text": "ออก Motr", "role": "quit" }
+      ]
+    },
+    {
+      "id": "menu.task", "text": "งาน",
+      "submenu": [
+        { "id": "task.new-task", "text": "งานใหม่", "command": "application:new-task", "command-after": "application:show?page=index" },
+        { "id": "task.new-bt-task", "text": "งาน BT ใหม่", "command": "application:new-bt-task", "command-after": "application:show?page=index" },
+        { "id": "task.open-file", "text": "เปิดไฟล์ทอร์เรนต์...", "command": "application:open-file", "command-before": "application:show?page=index" },
+        { "type": "separator" },
+        { "id": "app.task-list", "text": "งาน", "command": "application:task-list" },
+        { "id": "task.pause-task", "text": "พักงาน", "command": "application:pause-task" },
+        { "id": "task.resume-task", "text": "ทำงานต่อ", "command": "application:resume-task" },
+        { "id": "task.delete-task", "text": "ลบงาน", "command": "application:delete-task" },
+        { "id": "task.move-task-up", "text": "ย้ายงานขึ้น", "command": "application:move-task-up" },
+        { "id": "task.move-task-down", "text": "ย้ายงานลง", "command": "application:move-task-down" },
+        { "type": "separator" },
+        { "id": "task.pause-all-task", "text": "หยุดงานทั้งหมดชั่วคราว", "command": "application:pause-all-task" },
+        { "id": "task.resume-all-task", "text": "ทำงานทั้งหมดต่อ", "command": "application:resume-all-task" },
+        { "id": "task.select-all-task", "text": "เลือกงานทั้งหมด", "command": "application:select-all-task" }
+      ]
+    },
+    {
+      "id": "menu.edit", "text": "แก้ไข",
+      "submenu": [
+        { "id": "edit.undo", "text": "ไม่ทำ", "role": "undo" },
+        { "id": "edit.redo", "text": "ทำซ้ำ", "role": "redo" },
+        { "type": "separator" },
+        { "id": "edit.cut", "text": "ตัด", "role": "cut" },
+        { "id": "edit.copy", "text": "คัดลอก", "role": "copy" },
+        { "id": "edit.paste", "text": "วาง", "role": "paste" },
+        { "id": "edit.delete", "text": "ลบทิ้ง", "role": "delete" },
+        { "id": "edit.select-all", "text": "เลือกทั้งหมด", "role": "selectall" }
+      ]
+    },
+    {
+      "id": "menu.window", "text": "หน้าต่าง", "role": "window",
+      "submenu": [
+        { "id": "window.close", "text": "ปิด", "role": "close" },
+        { "id": "window.minimize", "text": "ย่อหน้าต่างเล็ก", "role": "minimize" },
+        { "id": "window.zoom", "text": "ขยาย", "role": "zoom" },
+        { "id": "window.toggle-fullscreen", "text": "เข้าสู่เต็มหน้าจอ", "role": "togglefullscreen" },
+        { "type": "separator" },
+        { "id": "window.front", "text": "นำทั้งหมดมาไว้ข้างหน้า", "role": "front" }
+      ]
+    },
+    {
+      "id": "menu.help", "text": "ช่วยเหลือ", "role": "help",
+      "submenu": [
+        { "id": "help.official-website", "text": "เว็บไซต์ Motr", "command": "help:official-website" },
+        { "id": "help.manual", "text": "คู่มือ", "command": "help:manual" },
+        { "id": "help.release-notes", "text": "บันทึกประจำรุ่น...", "command": "help:release-notes" },
+        { "type": "separator" },
+        { "id": "help.report-problem", "text": "รายงานปัญหา", "command": "help:report-problem" },
+        { "type": "separator" },
+        { "id": "help.toggle-dev-tools", "text": "สลับไปยังเครื่องมือสำหรับนักพัฒนา", "role": "toggledevtools" }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,73 @@
+{
+  "menu": [
+    {
+      "id": "menu.app", "text": "Motr",
+      "submenu": [
+        { "id": "app.about", "text": "关于 Motr", "command": "application:about", "command-before": "application:show?page=index" },
+        { "type": "separator" },
+        { "id": "app.preferences", "text": "偏好设置...", "command": "application:preferences" },
+        { "id": "app.check-for-updates", "text": "检查更新...", "command": "application:check-for-updates" },
+        { "id": "app.hide", "text": "隐藏 Motr", "role": "hide" },
+        { "id": "app.hide-others", "text": "隐藏其他", "role": "hideothers" },
+        { "id": "app.unhide", "text": "显示全部", "role": "unhide" },
+        { "type": "separator" },
+        { "id": "app.quit", "text": "退出 Motr", "role": "quit" }
+      ]
+    },
+    {
+      "id": "menu.task", "text": "任务",
+      "submenu": [
+        { "id": "task.new-task", "text": "新建任务", "command": "application:new-task", "command-after": "application:show?page=index" },
+        { "id": "task.new-bt-task", "text": "新建 BT 任务", "command": "application:new-bt-task", "command-after": "application:show?page=index" },
+        { "id": "task.open-file", "text": "打开种子文件...", "command": "application:open-file", "command-before": "application:show?page=index" },
+        { "type": "separator" },
+        { "id": "app.task-list", "text": "任务列表", "command": "application:task-list" },
+        { "id": "task.pause-task", "text": "暂停任务", "command": "application:pause-task" },
+        { "id": "task.resume-task", "text": "恢复任务", "command": "application:resume-task" },
+        { "id": "task.delete-task", "text": "移除任务", "command": "application:delete-task" },
+        { "id": "task.move-task-up", "text": "上移任务", "command": "application:move-task-up" },
+        { "id": "task.move-task-down", "text": "下移任务", "command": "application:move-task-down" },
+        { "type": "separator" },
+        { "id": "task.pause-all-task", "text": "暂停所有任务", "command": "application:pause-all-task" },
+        { "id": "task.resume-all-task", "text": "恢复所有任务", "command": "application:resume-all-task" },
+        { "id": "task.select-all-task", "text": "选中所有任务", "command": "application:select-all-task" }
+      ]
+    },
+    {
+      "id": "menu.edit", "text": "编辑",
+      "submenu": [
+        { "id": "edit.undo", "text": "撤销", "role": "undo" },
+        { "id": "edit.redo", "text": "重做", "role": "redo" },
+        { "type": "separator" },
+        { "id": "edit.cut", "text": "剪切", "role": "cut" },
+        { "id": "edit.copy", "text": "复制", "role": "copy" },
+        { "id": "edit.paste", "text": "黏贴", "role": "paste" },
+        { "id": "edit.delete", "text": "删除", "role": "delete" },
+        { "id": "edit.select-all", "text": "全选", "role": "selectall" }
+      ]
+    },
+    {
+      "id": "menu.window", "text": "窗口", "role": "window",
+      "submenu": [
+        { "id": "window.close", "text": "关闭", "role": "close" },
+        { "id": "window.minimize", "text": "最小化", "role": "minimize" },
+        { "id": "window.zoom", "text": "放大", "role": "zoom" },
+        { "id": "window.toggle-fullscreen", "text": "进入全屏幕", "role": "togglefullscreen" },
+        { "type": "separator" },
+        { "id": "window.front", "text": "前置全部窗口", "role": "front" }
+      ]
+    },
+    {
+      "id": "menu.help", "text": "帮助", "role": "help",
+      "submenu": [
+        { "id": "help.official-website", "text": "Motr 官网", "command": "help:official-website" },
+        { "id": "help.manual", "text": "使用手册", "command": "help:manual" },
+        { "id": "help.release-notes", "text": "发行说明...", "command": "help:release-notes" },
+        { "type": "separator" },
+        { "id": "help.report-problem", "text": "报告问题", "command": "help:report-problem" },
+        { "type": "separator" },
+        { "id": "help.toggle-dev-tools", "text": "开发者工具", "role": "toggledevtools" }
+      ]
+    }
+  ]
+}

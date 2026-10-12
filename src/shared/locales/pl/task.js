@@ -89,7 +89,6 @@ export default {
   'resume-all-task-success': 'Pomyślnie wznowiono wszystkie zadania',
   'resume-all-task-fail': 'Nie udało się wznowić wszystkich zadań',
   'select-all-task': 'Wybierz wszystkie zadania',
-  'clear-recent-tasks': 'Wyczyść ostatnie zadania',
   'purge-record': 'Usuń wszystkie rekordy zadań',
   'purge-record-success': 'Pomyślnie usunięto wszystkie rekordy zadań',
   'purge-record-fail': 'Nie udało się usunąć wszystkich rekordów zadań',

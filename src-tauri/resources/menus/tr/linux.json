@@ -1,0 +1,71 @@
+{
+  "menu": [
+    {
+      "id": "menu.file", "text": "Dosya",
+      "submenu": [
+        { "id": "app.about", "text": "Motr Hakkında", "command": "application:about", "command-before": "application:show?page=index" },
+        { "type": "separator" },
+        { "id": "app.preferences", "text": "Ayarlar...", "command": "application:preferences" },
+        { "id": "app.check-for-updates", "text": "Güncellemeleri kontrol et...", "command": "application:check-for-updates" },
+        { "id": "app.show", "text": "Motr'i Göster", "command": "application:show", "command-arg": { "page": "index" } },
+        { "type": "separator" },
+        { "id": "app.quit", "text": "Motr'ten çık", "role": "quit" }
+      ]
+    },
+    {
+      "id": "menu.task", "text": "Görev",
+      "submenu": [
+        { "id": "task.new-task", "text": "Yeni Görev", "command": "application:new-task", "command-after": "application:show?page=index" },
+        { "id": "task.new-bt-task", "text": "Yeni BT Görevi", "command": "application:new-bt-task", "command-after": "application:show?page=index" },
+        { "id": "task.open-file", "text": "Torrent Dosyasını Aç...", "command": "application:open-file", "command-before": "application:show?page=index" },
+        { "type": "separator" },
+        { "id": "app.task-list", "text": "Görevler", "command": "application:task-list" },
+        { "id": "task.pause-task", "text": "Görevi Durdur", "command": "application:pause-task" },
+        { "id": "task.resume-task", "text": "Görevi sürdür", "command": "application:resume-task" },
+        { "id": "task.delete-task", "text": "Görevi sil", "command": "application:delete-task" },
+        { "id": "task.move-task-up", "text": "Görevi yukarı taşı", "command": "application:move-task-up" },
+        { "id": "task.move-task-down", "text": "Görevi aşağı taşı", "command": "application:move-task-down" },
+        { "type": "separator" },
+        { "id": "task.pause-all-task", "text": "Bütün görevleri durdur", "command": "application:pause-all-task" },
+        { "id": "task.resume-all-task", "text": "Bütün görevleri sürdür", "command": "application:resume-all-task" },
+        { "id": "task.select-all-task", "text": "Tüm görevi seçin", "command": "application:select-all-task" }
+      ]
+    },
+    {
+      "id": "menu.edit", "text": "Düzenle",
+      "submenu": [
+        { "id": "edit.undo", "text": "Geri al", "role": "undo" },
+        { "id": "edit.redo", "text": "Yinele", "role": "redo" },
+        { "type": "separator" },
+        { "id": "edit.cut", "text": "Kes", "role": "cut" },
+        { "id": "edit.copy", "text": "Kopyala", "role": "copy" },
+        { "id": "edit.paste", "text": "Yapıştır", "role": "paste" },
+        { "id": "edit.delete", "text": "Sil", "role": "delete" },
+        { "id": "edit.select-all", "text": "Hepsini seç", "role": "selectall" }
+      ]
+    },
+    {
+      "id": "menu.window", "text": "Pencere", "role": "window",
+      "submenu": [
+        { "id": "window.close", "text": "Kapat", "role": "close" },
+        { "id": "window.minimize", "text": "Küçült", "role": "minimize" },
+        { "id": "window.zoom", "text": "Yakınlaştır", "role": "zoom" },
+        { "id": "window.toggle-fullscreen", "text": "Tam ekran yap", "role": "togglefullscreen" },
+        { "type": "separator" },
+        { "id": "window.front", "text": "Tümünü Öne Getir", "role": "front" }
+      ]
+    },
+    {
+      "id": "menu.help", "text": "Yardım", "role": "help",
+      "submenu": [
+        { "id": "help.official-website", "text": "Motr Web Sitesi", "command": "help:official-website" },
+        { "id": "help.manual", "text": "Kılavuz", "command": "help:manual" },
+        { "id": "help.release-notes", "text": "Sürüm Notları...", "command": "help:release-notes" },
+        { "type": "separator" },
+        { "id": "help.report-problem", "text": "Sorun bildir", "command": "help:report-problem" },
+        { "type": "separator" },
+        { "id": "help.toggle-dev-tools", "text": "Geliştirici Aracına geçiş yap", "role": "toggledevtools" }
+      ]
+    }
+  ]
+}

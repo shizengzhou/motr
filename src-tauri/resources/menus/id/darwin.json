@@ -1,0 +1,73 @@
+{
+  "menu": [
+    {
+      "id": "menu.app", "text": "Motr",
+      "submenu": [
+        { "id": "app.about", "text": "Tentang Motr", "command": "application:about", "command-before": "application:show?page=index" },
+        { "type": "separator" },
+        { "id": "app.preferences", "text": "Preferensi...", "command": "application:preferences" },
+        { "id": "app.check-for-updates", "text": "Periksa Pembaruan...", "command": "application:check-for-updates" },
+        { "id": "app.hide", "text": "Sembungikan Motr", "role": "hide" },
+        { "id": "app.hide-others", "text": "Sembunyikan yang lain", "role": "hideothers" },
+        { "id": "app.unhide", "text": "Tunjukan Semua", "role": "unhide" },
+        { "type": "separator" },
+        { "id": "app.quit", "text": "Keluarkan Motr", "role": "quit" }
+      ]
+    },
+    {
+      "id": "menu.task", "text": "Tugas",
+      "submenu": [
+        { "id": "task.new-task", "text": "Tugas Baru", "command": "application:new-task", "command-after": "application:show?page=index" },
+        { "id": "task.new-bt-task", "text": "Tugas BT baru", "command": "application:new-bt-task", "command-after": "application:show?page=index" },
+        { "id": "task.open-file", "text": "Buka Berkas Torrent...", "command": "application:open-file", "command-before": "application:show?page=index" },
+        { "type": "separator" },
+        { "id": "app.task-list", "text": "Tugas", "command": "application:task-list" },
+        { "id": "task.pause-task", "text": "Tunda Tugas", "command": "application:pause-task" },
+        { "id": "task.resume-task", "text": "Lanjutkan tugas", "command": "application:resume-task" },
+        { "id": "task.delete-task", "text": "Hapus tugas", "command": "application:delete-task" },
+        { "id": "task.move-task-up", "text": "Pidahkan Tugas ke Atas", "command": "application:move-task-up" },
+        { "id": "task.move-task-down", "text": "Pidahkan Tugas ke Bawah", "command": "application:move-task-down" },
+        { "type": "separator" },
+        { "id": "task.pause-all-task", "text": "Tunda Semua Tugas", "command": "application:pause-all-task" },
+        { "id": "task.resume-all-task", "text": "Lanjutkan Semua Tugas", "command": "application:resume-all-task" },
+        { "id": "task.select-all-task", "text": "Pilih Semua Tugas", "command": "application:select-all-task" }
+      ]
+    },
+    {
+      "id": "menu.edit", "text": "Edit",
+      "submenu": [
+        { "id": "edit.undo", "text": "Urungkan", "role": "undo" },
+        { "id": "edit.redo", "text": "Ulangi", "role": "redo" },
+        { "type": "separator" },
+        { "id": "edit.cut", "text": "Potong", "role": "cut" },
+        { "id": "edit.copy", "text": "Salin", "role": "copy" },
+        { "id": "edit.paste", "text": "Tempel", "role": "paste" },
+        { "id": "edit.delete", "text": "Hapus", "role": "delete" },
+        { "id": "edit.select-all", "text": "Pilih Semua", "role": "selectall" }
+      ]
+    },
+    {
+      "id": "menu.window", "text": "Window", "role": "window",
+      "submenu": [
+        { "id": "window.close", "text": "Keluar", "role": "close" },
+        { "id": "window.minimize", "text": "Perkecil", "role": "minimize" },
+        { "id": "window.zoom", "text": "Zoom", "role": "zoom" },
+        { "id": "window.toggle-fullscreen", "text": "Layar penuh", "role": "togglefullscreen" },
+        { "type": "separator" },
+        { "id": "window.front", "text": "Bawa Semua ke Depan", "role": "front" }
+      ]
+    },
+    {
+      "id": "menu.help", "text": "Bantuan", "role": "help",
+      "submenu": [
+        { "id": "help.official-website", "text": "Motr Website", "command": "help:official-website" },
+        { "id": "help.manual", "text": "Panduan", "command": "help:manual" },
+        { "id": "help.release-notes", "text": "Catatan Rilis...", "command": "help:release-notes" },
+        { "type": "separator" },
+        { "id": "help.report-problem", "text": "Laporkan Masalah", "command": "help:report-problem" },
+        { "type": "separator" },
+        { "id": "help.toggle-dev-tools", "text": "Alihkan Alat Pengembang", "role": "toggledevtools" }
+      ]
+    }
+  ]
+}

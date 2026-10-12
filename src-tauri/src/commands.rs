@@ -3,7 +3,7 @@ use tauri_plugin_os::{arch, platform};
 use tauri_plugin_store::StoreExt;
 
 use crate::config_manager::{Config, SystemConfig, UserConfig};
-use crate::context::Context;
+use crate::context::{Context, get_aria2_conf_path, get_session_path};
 
 #[tauri::command]
 pub async fn trash_item(path: String) -> Result<(), String> {
@@ -35,10 +35,10 @@ pub fn get_app_config(app_handle: AppHandle) -> Result<Config, String> {
             .unwrap()
             .to_string_lossy()
             .to_string(),
-        session_path: String::new(),
+        session_path: get_session_path(&app_handle),
         engine_path: String::new(),
         aria2_bin_path: String::new(),
-        aria2_conf_path: String::new(),
+        aria2_conf_path: get_aria2_conf_path(&app_handle),
     };
 
     // user.json 里有数据就用文件里的，缺失的键（或整份文件不存在）回落到默认值

@@ -1,0 +1,71 @@
+{
+  "menu": [
+    {
+      "id": "menu.file", "text": "پرونده",
+      "submenu": [
+        { "id": "app.about", "text": "دربارهٔ ماتریکس", "command": "application:about", "command-before": "application:show?page=index" },
+        { "type": "separator" },
+        { "id": "app.preferences", "text": "ترجیحات...", "command": "application:preferences" },
+        { "id": "app.check-for-updates", "text": "بررسی برای به‌روز رسانی...", "command": "application:check-for-updates" },
+        { "id": "app.show", "text": "ماتریکس را نشان بده", "command": "application:show", "command-arg": { "page": "index" } },
+        { "type": "separator" },
+        { "id": "app.quit", "text": "از ماتریکس خارج شو", "role": "quit" }
+      ]
+    },
+    {
+      "id": "menu.task", "text": "وظیفه",
+      "submenu": [
+        { "id": "task.new-task", "text": "وظیفهٔ جدید", "command": "application:new-task", "command-after": "application:show?page=index" },
+        { "id": "task.new-bt-task", "text": "وظیفهٔ بیت‌تورنت جدید", "command": "application:new-bt-task", "command-after": "application:show?page=index" },
+        { "id": "task.open-file", "text": "بازکردن پروندهٔ تورنت...", "command": "application:open-file", "command-before": "application:show?page=index" },
+        { "type": "separator" },
+        { "id": "app.task-list", "text": "وظایف", "command": "application:task-list" },
+        { "id": "task.pause-task", "text": "مکث", "command": "application:pause-task" },
+        { "id": "task.resume-task", "text": "از سرگیری وظیفه", "command": "application:resume-task" },
+        { "id": "task.delete-task", "text": "حذف وظیفه", "command": "application:delete-task" },
+        { "id": "task.move-task-up", "text": "جابجایی وظیفه به بالا", "command": "application:move-task-up" },
+        { "id": "task.move-task-down", "text": "جابجایی وظیفه به پایین", "command": "application:move-task-down" },
+        { "type": "separator" },
+        { "id": "task.pause-all-task", "text": "توقف همهٔ وظایف", "command": "application:pause-all-task" },
+        { "id": "task.resume-all-task", "text": "از سرگیری همهٔ وظایف", "command": "application:resume-all-task" },
+        { "id": "task.select-all-task", "text": "انتخاب همه وظایف", "command": "application:select-all-task" }
+      ]
+    },
+    {
+      "id": "menu.edit", "text": "ویرایش",
+      "submenu": [
+        { "id": "edit.undo", "text": "برگردان", "role": "undo" },
+        { "id": "edit.redo", "text": "انجام دوباره", "role": "redo" },
+        { "type": "separator" },
+        { "id": "edit.cut", "text": "برش", "role": "cut" },
+        { "id": "edit.copy", "text": "رونوشت", "role": "copy" },
+        { "id": "edit.paste", "text": "جای‌گذاری", "role": "paste" },
+        { "id": "edit.delete", "text": "حذف", "role": "delete" },
+        { "id": "edit.select-all", "text": "گزینش همه", "role": "selectall" }
+      ]
+    },
+    {
+      "id": "menu.window", "text": "پنجره", "role": "window",
+      "submenu": [
+        { "id": "window.close", "text": "بستن", "role": "close" },
+        { "id": "window.minimize", "text": "کمینه", "role": "minimize" },
+        { "id": "window.zoom", "text": "بزرگنمایی", "role": "zoom" },
+        { "id": "window.toggle-fullscreen", "text": "حالت تمام صفحه", "role": "togglefullscreen" },
+        { "type": "separator" },
+        { "id": "window.front", "text": "همه را جلو بیار", "role": "front" }
+      ]
+    },
+    {
+      "id": "menu.help", "text": "راهنما", "role": "help",
+      "submenu": [
+        { "id": "help.official-website", "text": "سایت ماتریکس", "command": "help:official-website" },
+        { "id": "help.manual", "text": "کتابچهٔ راهنما", "command": "help:manual" },
+        { "id": "help.release-notes", "text": "یادداشت‌های انتشار...", "command": "help:release-notes" },
+        { "type": "separator" },
+        { "id": "help.report-problem", "text": "گزارش مشکل", "command": "help:report-problem" },
+        { "type": "separator" },
+        { "id": "help.toggle-dev-tools", "text": "تغییر حالت ابزارهای توسعه‌دهنده", "role": "toggledevtools" }
+      ]
+    }
+  ]
+}

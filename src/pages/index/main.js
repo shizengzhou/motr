@@ -5,6 +5,8 @@ import { sync } from 'vuex-router-sync';
 import Element, { Loading, Message } from 'element-ui';
 import axios from 'axios';
 
+import { invoke } from '@tauri-apps/api/core';
+
 import App from './App.vue';
 import is from '@/utils/is';
 import router from '@/router';
@@ -17,6 +19,8 @@ import TrayWorker from '@/workers/tray.worker?worker';
 
 import '@/components/Theme/Index.scss';
 
+// 速率计：渲染进程把「图标 + 上下行速率」画成图（见 workers/tray.worker.js），
+// 这里把它交给 Rust 设成托盘图标（等价原 Electron 版的 application:update-tray）
 const updateTray = is.isTauri()
   ? async (payload) => {
       const { tray } = payload;
@@ -24,8 +28,15 @@ const updateTray = is.isTauri()
         return;
       }
 
-      // const ab = await tray.arrayBuffer();
-      // ipcRenderer.send('command', 'application:update-tray', ab);
+      const buffer = await tray.arrayBuffer();
+
+      try {
+        await invoke('set_tray_speedometer', {
+          png: Array.from(new Uint8Array(buffer)),
+        });
+      } catch (err) {
+        console.warn('[Motr] update tray speedometer fail:', err);
+      }
     }
   : () => {};
 
@@ -38,14 +49,14 @@ function initTrayWorker() {
     switch (type) {
       case 'initialized':
       case 'log':
-        console.log('[Motrix] Log from Tray Worker: ', payload);
+        console.log('[Motr] Log from Tray Worker: ', payload);
         break;
       case 'tray:drawed':
         updateTray(payload);
         break;
       default:
         console.warn(
-          '[Motrix] Tray Worker unhandled message type:',
+          '[Motr] Tray Worker unhandled message type:',
           type,
           payload
         );
@@ -98,6 +109,10 @@ function init(config) {
 
   app.trayWorker = initTrayWorker();
 
+  // 挂到 window：组件里用 window.app 取这几个对象
+  //（原 Electron 版渲染进程里 global === window，vue-electron 会把 app 挂上去）
+  window.app = app;
+
   setTimeout(() => {
     loading.close();
   }, 400);
@@ -105,10 +120,11 @@ function init(config) {
 
 Promise.all([
   store.dispatch('preference/fetchPreference'),
-  store.dispatch('app/fetchSystemTheme'),
+  // 读一次系统主题 + 订阅后续变化（theme=auto 时跟随系统）
+  store.dispatch('app/initSystemTheme'),
 ])
   .then(([config]) => {
-    console.info('[Motrix] load preference:', config);
+    console.info('[Motr] load preference:', config);
     init(config);
   })
   .catch((err) => {

@@ -89,7 +89,6 @@ export default {
   'resume-all-task-success': 'すべてのタスクを再開に成功',
   'resume-all-task-fail': 'すべてのタスクを再開に失敗',
   'select-all-task': 'すべてのタスクを選択します',
-  'clear-recent-tasks': '最近のタスク履歴を削除',
   'purge-record': 'タスク履歴をクリア',
   'purge-record-success': 'タスク履歴のクリアに成功',
   'purge-record-fail': 'タスク履歴のクリアに失敗',

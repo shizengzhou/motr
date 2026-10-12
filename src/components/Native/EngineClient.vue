@@ -104,10 +104,10 @@ export default {
         const taskName = getTaskName(task);
         const { errorCode, errorMessage } = task;
         console.error(
-          `[Motrix] download error gid: ${gid}, #${errorCode}, ${errorMessage}`
+          `[Motr] download error gid: ${gid}, #${errorCode}, ${errorMessage}`
         );
         const message = this.$t('task.download-error-message', { taskName });
-        const link = `<a target="_blank" href="https://github.com/agalwood/Motrix/wiki/Error#${errorCode}" rel="noopener noreferrer">${errorCode}</a>`;
+        const link = `<a target="_blank" href="https://github.com/agalwood/Motr/wiki/Error#${errorCode}" rel="noopener noreferrer">${errorCode}</a>`;
         this.$msg({
           type: 'error',
           showClose: true,
@@ -145,12 +145,9 @@ export default {
 
       const path = getTaskFullPath(task);
       this.showTaskCompleteNotify(task, isBT, path);
-      this.$electron.ipcRenderer.send(
-        'event',
-        'task-download-complete',
-        task,
-        path
-      );
+
+      // 原 Electron 版这里会把 task-download-complete 发给主进程（做 addRecentDocument
+      // 和 Dock 动画），这两件事暂时都没做
     },
     showTaskCompleteNotify(task, isBT, path) {
       const taskName = getTaskName(task);

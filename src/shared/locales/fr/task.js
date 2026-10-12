@@ -88,7 +88,6 @@ export default {
   'resume-all-task-success': 'Reprise réussie',
   'resume-all-task-fail': 'Reprise échouée',
   'select-all-task': 'Sélectionnez toutes les tâches',
-  'clear-recent-tasks': 'Effacer les tâches récentes',
   'purge-record': 'Purger les tâches récentes',
   'purge-record-success': 'Purge des tâches récentes réussie',
   'purge-record-fail': 'Purge des tâches récentes échouée',

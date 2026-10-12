@@ -86,7 +86,6 @@ export default {
   'resume-all-task-success': 'Minden feladat folytatása sikeres volt',
   'resume-all-task-fail': 'Minden feladat folytatása sikertelen volt',
   'select-all-task': 'Összes feladat Kijelölése',
-  'clear-recent-tasks': 'Elözö feladat törlése',
   'purge-record': 'Feladatok tisztitása',
   'purge-record-success': 'Feladatok tisztitása sikeres volt',
   'purge-record-fail': 'Feladatok tisztitása sikertelen volt',

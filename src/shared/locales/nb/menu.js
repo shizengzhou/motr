@@ -1,5 +1,5 @@
 export default {
-  app: 'Motrix',
+  app: 'Motr',
   file: 'Fil',
   task: 'Oppgave',
   edit: 'Rediger',

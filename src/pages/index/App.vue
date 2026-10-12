@@ -10,6 +10,7 @@
 
 <script>
 import { mapGetters, mapState } from 'vuex';
+import { invoke } from '@tauri-apps/api/core';
 import is from '@/utils/is';
 import { APP_RUN_MODE, APP_THEME } from '@shared/constants';
 import DynamicTray from '@/components/Native/DynamicTray.vue';
@@ -66,6 +67,17 @@ export default {
     },
   },
   methods: {
+    // 原生菜单（App 菜单 + 托盘菜单）的语言由 Rust 侧构建，
+    // 这里只把语言值同步过去，让它按新语言重建菜单
+    rebuildNativeMenus(locale) {
+      if (!this.isRenderer) {
+        return;
+      }
+
+      invoke('rebuild_menus', { locale }).catch((err) => {
+        console.warn('[Motr] rebuild native menus fail:', err);
+      });
+    },
     updateRootClassName() {
       const { themeClass = '', i18nClass = '', directionClass = '' } = this;
       const className = `${themeClass} ${i18nClass} ${directionClass}`;
@@ -79,6 +91,7 @@ export default {
     locale(val) {
       const lng = getLanguage(val);
       getLocaleManager().changeLanguage(lng);
+      this.rebuildNativeMenus(lng);
     },
     themeClass() {
       this.updateRootClassName();

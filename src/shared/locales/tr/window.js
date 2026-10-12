@@ -1,5 +1,4 @@
 export default {
-  reload: 'Yenile',
   close: 'Kapat',
   minimize: 'Küçült',
   zoom: 'Yakınlaştır',

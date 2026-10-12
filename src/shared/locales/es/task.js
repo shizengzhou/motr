@@ -90,7 +90,6 @@ export default {
   'resume-all-task-success': 'Se reanudaron exitosamente todas las tareas',
   'resume-all-task-fail': 'Hubo un error al reanudar todas las tareas',
   'select-all-task': 'Seleccionar toda la tarea',
-  'clear-recent-tasks': 'Limpiar tareas recientes',
   'purge-record': 'Registros de tareas purgados con éxito',
   'purge-record-success':
     'Se eliminaron los registros de tareas de manera exitosa',

@@ -87,7 +87,6 @@ export default {
   'resume-all-task-success': '모든 작업 재개 성공',
   'resume-all-task-fail': '모든 작업 재개 실패',
   'select-all-task': '모든 작업 선택',
-  'clear-recent-tasks': '최근 작업 지우기',
   'purge-record': '작업 기록 삭제',
   'purge-record-success': '작업 기록 삭제 성공',
   'purge-record-fail': '작업 기록 삭제 실패',

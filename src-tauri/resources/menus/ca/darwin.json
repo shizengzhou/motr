@@ -1,0 +1,73 @@
+{
+  "menu": [
+    {
+      "id": "menu.app", "text": "Motr",
+      "submenu": [
+        { "id": "app.about", "text": "Sobre Motr", "command": "application:about", "command-before": "application:show?page=index" },
+        { "type": "separator" },
+        { "id": "app.preferences", "text": "Preferències...", "command": "application:preferences" },
+        { "id": "app.check-for-updates", "text": "Comprovar actualitzacions...", "command": "application:check-for-updates" },
+        { "id": "app.hide", "text": "Ocultar Motr", "role": "hide" },
+        { "id": "app.hide-others", "text": "Ocultar altres", "role": "hideothers" },
+        { "id": "app.unhide", "text": "Mostrar tot", "role": "unhide" },
+        { "type": "separator" },
+        { "id": "app.quit", "text": "Sortir de Motr", "role": "quit" }
+      ]
+    },
+    {
+      "id": "menu.task", "text": "Tasca",
+      "submenu": [
+        { "id": "task.new-task", "text": "Nova Tasca", "command": "application:new-task", "command-after": "application:show?page=index" },
+        { "id": "task.new-bt-task", "text": "Nova Tasca BT", "command": "application:new-bt-task", "command-after": "application:show?page=index" },
+        { "id": "task.open-file", "text": "Obrir arxiu Torrent...", "command": "application:open-file", "command-before": "application:show?page=index" },
+        { "type": "separator" },
+        { "id": "app.task-list", "text": "Tasques", "command": "application:task-list" },
+        { "id": "task.pause-task", "text": "Pausar tasca", "command": "application:pause-task" },
+        { "id": "task.resume-task", "text": "Resumir tasca", "command": "application:resume-task" },
+        { "id": "task.delete-task", "text": "Eliminar tasca", "command": "application:delete-task" },
+        { "id": "task.move-task-up", "text": "Desplaçar tasca cap a dalt", "command": "application:move-task-up" },
+        { "id": "task.move-task-down", "text": "Desplaçar tasca cap a baix", "command": "application:move-task-down" },
+        { "type": "separator" },
+        { "id": "task.pause-all-task", "text": "Pausar totes les tasques", "command": "application:pause-all-task" },
+        { "id": "task.resume-all-task", "text": "Resumir totes les tasques", "command": "application:resume-all-task" },
+        { "id": "task.select-all-task", "text": "Seleccioneu tota la tasca", "command": "application:select-all-task" }
+      ]
+    },
+    {
+      "id": "menu.edit", "text": "Editar",
+      "submenu": [
+        { "id": "edit.undo", "text": "Desfer", "role": "undo" },
+        { "id": "edit.redo", "text": "Refer", "role": "redo" },
+        { "type": "separator" },
+        { "id": "edit.cut", "text": "Retallar", "role": "cut" },
+        { "id": "edit.copy", "text": "Copiar", "role": "copy" },
+        { "id": "edit.paste", "text": "Enganxar", "role": "paste" },
+        { "id": "edit.delete", "text": "Eliminar", "role": "delete" },
+        { "id": "edit.select-all", "text": "Seleccionar tot", "role": "selectall" }
+      ]
+    },
+    {
+      "id": "menu.window", "text": "Finestra", "role": "window",
+      "submenu": [
+        { "id": "window.close", "text": "Tancar", "role": "close" },
+        { "id": "window.minimize", "text": "Minimitzar", "role": "minimize" },
+        { "id": "window.zoom", "text": "Zoom", "role": "zoom" },
+        { "id": "window.toggle-fullscreen", "text": "Posar a Pantalla Completa", "role": "togglefullscreen" },
+        { "type": "separator" },
+        { "id": "window.front", "text": "Posar Tot Al Front", "role": "front" }
+      ]
+    },
+    {
+      "id": "menu.help", "text": "Ajuda", "role": "help",
+      "submenu": [
+        { "id": "help.official-website", "text": "Lloc web de Motr", "command": "help:official-website" },
+        { "id": "help.manual", "text": "Manual", "command": "help:manual" },
+        { "id": "help.release-notes", "text": "Notes de la versió...", "command": "help:release-notes" },
+        { "type": "separator" },
+        { "id": "help.report-problem", "text": "Informar d'un problema", "command": "help:report-problem" },
+        { "type": "separator" },
+        { "id": "help.toggle-dev-tools", "text": "Alternar les eines de desenvolupament", "role": "toggledevtools" }
+      ]
+    }
+  ]
+}

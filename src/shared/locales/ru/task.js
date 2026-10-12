@@ -90,7 +90,6 @@ export default {
   'resume-all-task-success': 'Успешно возобновлены все задания',
   'resume-all-task-fail': 'Ошибка во время возобновления всех заданий',
   'select-all-task': 'Выберите все задачи',
-  'clear-recent-tasks': 'Очистить последние задания',
   'purge-record': 'Очистить записи о заданиях',
   'purge-record-success': 'Успешно очищены записи о заданиях',
   'purge-record-fail': 'Ошибка при очистке записей о заданиях',

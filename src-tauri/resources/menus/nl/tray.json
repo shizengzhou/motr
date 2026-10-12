@@ -1,0 +1,13 @@
+[
+  { "id": "task.new-task", "text": "Nieuwe taak", "command": "application:new-task", "command-after": "application:show?page=index" },
+  { "id": "task.new-bt-task", "text": "Nieuwe BT taak", "command": "application:new-bt-task", "command-arg": { "type": "torrent" }, "command-after": "application:show?page=index" },
+  { "id": "task.open-file", "text": "Torrentbestand openen...", "command": "application:open-file", "command-before": "application:show?page=index" },
+  { "type": "separator" },
+  { "id": "app.show", "text": "Laat Motr zien", "command": "application:show", "command-arg": { "page": "index" } },
+  { "id": "help.manual", "text": "Handleiding", "command": "help:manual" },
+  { "id": "app.check-for-updates", "text": "Naar updates zoeken...", "command": "application:check-for-updates" },
+  { "type": "separator" },
+  { "id": "app.task-list", "text": "Taken", "command": "application:task-list", "command-before": "application:show?page=index" },
+  { "id": "app.preferences", "text": "Voorkeuren...", "command": "application:preferences", "command-before": "application:show?page=index" },
+  { "id": "app.quit", "text": "Motr afsluiten", "command": "application:quit" }
+]

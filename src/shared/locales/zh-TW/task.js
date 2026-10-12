@@ -83,7 +83,6 @@ export default {
   'resume-all-task-success': '繼續所有任務成功',
   'resume-all-task-fail': '繼續所有任務失敗',
   'select-all-task': '選擇所有任務',
-  'clear-recent-tasks': '清除最近的下載紀錄',
   'purge-record': '清除下載紀錄',
   'purge-record-success': '清除下載紀錄成功',
   'purge-record-fail': '清除下載紀錄失敗',

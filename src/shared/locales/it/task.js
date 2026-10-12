@@ -90,7 +90,6 @@ export default {
   'resume-all-task-success': 'Tutte le attività ricominciate con successo',
   'resume-all-task-fail': 'Impossibile ricominciate tutte le attività',
   'select-all-task': 'Seleziona tutte le attività',
-  'clear-recent-tasks': 'Elimina le attività recenti',
   'purge-record': 'Elimina la cronologia delle attività',
   'purge-record-success': 'Cronologia delle attività eliminata con successo',
   'purge-record-fail': 'Impossibile eliminare la cronologia delle attività',

@@ -86,7 +86,6 @@ export default {
   'resume-all-task-success': 'تم إستئناف جميع التحميلات بنجاح',
   'resume-all-task-fail': 'فشل في إستئناف جميع التحميلات',
   'select-all-task': 'تحديد جميع التحميلات',
-  'clear-recent-tasks': 'حذف التحميلات الحديثة',
   'purge-record': 'تطهير سجل التحميل',
   'purge-record-success': 'تم تطهير سجلات المهة بنجاح',
   'purge-record-fail': 'فشل في تطهير سجلات التحميل',

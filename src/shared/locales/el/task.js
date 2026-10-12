@@ -90,7 +90,6 @@ export default {
   'resume-all-task-success': 'Όλες οι εργασίες συνέχισαν επιτυχώς',
   'resume-all-task-fail': 'Αποτυχία στη συνέχεια όλων τον εργασιών',
   'select-all-task': 'Επιλογή όλων των εργασιών',
-  'clear-recent-tasks': 'Καθαρισμός πρόσφατων λήψεων',
   'purge-record': 'Καθαρισμός αρχείου λήψεων',
   'purge-record-success': 'Επιτυχής καθαρισμός αρχείου λήψεων',
   'purge-record-fail': 'Αποτυχία στον καθαρισμό αρχείου λήψεων',

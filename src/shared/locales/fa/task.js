@@ -87,7 +87,6 @@ export default {
   'resume-all-task-success': 'از سرگیری همهٔ وظایف با موفقیت انجام شد',
   'resume-all-task-fail': 'از سرگیری همهٔ وظایف شکست خورد',
   'select-all-task': 'انتخاب همه وظایف',
-  'clear-recent-tasks': 'پاک کردن وظایف اخیر',
   'purge-record': 'پاک کردن سابقهٔ وظایف',
   'purge-record-success': 'پاک کردن سابقهٔ وظایف با موفقیت انجام شد',
   'purge-record-fail': 'پاک کردن سابقهٔ وظایف شکست خورد',

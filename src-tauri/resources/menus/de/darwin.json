@@ -1,0 +1,73 @@
+{
+  "menu": [
+    {
+      "id": "menu.app", "text": "Motr",
+      "submenu": [
+        { "id": "app.about", "text": "Über Motr", "command": "application:about", "command-before": "application:show?page=index" },
+        { "type": "separator" },
+        { "id": "app.preferences", "text": "Einstellungen...", "command": "application:preferences" },
+        { "id": "app.check-for-updates", "text": "Nach Updates suchen...", "command": "application:check-for-updates" },
+        { "id": "app.hide", "text": "Motr verbergen", "role": "hide" },
+        { "id": "app.hide-others", "text": "Andere verbergen", "role": "hideothers" },
+        { "id": "app.unhide", "text": "Alles anzeigen", "role": "unhide" },
+        { "type": "separator" },
+        { "id": "app.quit", "text": "Motr beenden", "role": "quit" }
+      ]
+    },
+    {
+      "id": "menu.task", "text": "Aufgabe",
+      "submenu": [
+        { "id": "task.new-task", "text": "Neue Aufgabe", "command": "application:new-task", "command-after": "application:show?page=index" },
+        { "id": "task.new-bt-task", "text": "Neue BT Aufgabe", "command": "application:new-bt-task", "command-after": "application:show?page=index" },
+        { "id": "task.open-file", "text": "Torrent-Datei öffnen...", "command": "application:open-file", "command-before": "application:show?page=index" },
+        { "type": "separator" },
+        { "id": "app.task-list", "text": "Aufgaben", "command": "application:task-list" },
+        { "id": "task.pause-task", "text": "Aufgabe pausieren", "command": "application:pause-task" },
+        { "id": "task.resume-task", "text": "Aufgabe fortsetzen", "command": "application:resume-task" },
+        { "id": "task.delete-task", "text": "Aufgabe löschen", "command": "application:delete-task" },
+        { "id": "task.move-task-up", "text": "Aufgabe nach oben verschieben", "command": "application:move-task-up" },
+        { "id": "task.move-task-down", "text": "Aufgabe nach unten verschieben", "command": "application:move-task-down" },
+        { "type": "separator" },
+        { "id": "task.pause-all-task", "text": "Alle Aufgaben pausieren", "command": "application:pause-all-task" },
+        { "id": "task.resume-all-task", "text": "Alle Aufgaben fortsetzen", "command": "application:resume-all-task" },
+        { "id": "task.select-all-task", "text": "Wählen Sie alle Aufgaben aus", "command": "application:select-all-task" }
+      ]
+    },
+    {
+      "id": "menu.edit", "text": "Bearbeiten",
+      "submenu": [
+        { "id": "edit.undo", "text": "Rückgängig", "role": "undo" },
+        { "id": "edit.redo", "text": "Wiederholen", "role": "redo" },
+        { "type": "separator" },
+        { "id": "edit.cut", "text": "Ausschneiden", "role": "cut" },
+        { "id": "edit.copy", "text": "Kopieren", "role": "copy" },
+        { "id": "edit.paste", "text": "Einfügen", "role": "paste" },
+        { "id": "edit.delete", "text": "Löschen", "role": "delete" },
+        { "id": "edit.select-all", "text": "Alles auswählen", "role": "selectall" }
+      ]
+    },
+    {
+      "id": "menu.window", "text": "Fenster", "role": "window",
+      "submenu": [
+        { "id": "window.close", "text": "Schließen", "role": "close" },
+        { "id": "window.minimize", "text": "Minimieren", "role": "minimize" },
+        { "id": "window.zoom", "text": "Zoomen", "role": "zoom" },
+        { "id": "window.toggle-fullscreen", "text": "Vollbildmodus aktivieren", "role": "togglefullscreen" },
+        { "type": "separator" },
+        { "id": "window.front", "text": "Alles in den Vordergrund bringen", "role": "front" }
+      ]
+    },
+    {
+      "id": "menu.help", "text": "Hilfe", "role": "help",
+      "submenu": [
+        { "id": "help.official-website", "text": "Motr Website", "command": "help:official-website" },
+        { "id": "help.manual", "text": "Handbuch", "command": "help:manual" },
+        { "id": "help.release-notes", "text": "Versionshinweise...", "command": "help:release-notes" },
+        { "type": "separator" },
+        { "id": "help.report-problem", "text": "Problem melden", "command": "help:report-problem" },
+        { "type": "separator" },
+        { "id": "help.toggle-dev-tools", "text": "Entwicklerwerkzeuge umschalten", "role": "toggledevtools" }
+      ]
+    }
+  ]
+}

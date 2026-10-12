@@ -1,0 +1,13 @@
+[
+  { "id": "task.new-task", "text": "Nuova attività", "command": "application:new-task", "command-after": "application:show?page=index" },
+  { "id": "task.new-bt-task", "text": "Nuova attività BT", "command": "application:new-bt-task", "command-arg": { "type": "torrent" }, "command-after": "application:show?page=index" },
+  { "id": "task.open-file", "text": "Apri un file Torrent...", "command": "application:open-file", "command-before": "application:show?page=index" },
+  { "type": "separator" },
+  { "id": "app.show", "text": "Mostra Motr", "command": "application:show", "command-arg": { "page": "index" } },
+  { "id": "help.manual", "text": "Manuale", "command": "help:manual" },
+  { "id": "app.check-for-updates", "text": "Verifica la disponibilità di aggiornamenti...", "command": "application:check-for-updates" },
+  { "type": "separator" },
+  { "id": "app.task-list", "text": "Attività", "command": "application:task-list", "command-before": "application:show?page=index" },
+  { "id": "app.preferences", "text": "Preferenze...", "command": "application:preferences", "command-before": "application:show?page=index" },
+  { "id": "app.quit", "text": "Esci da Motr", "command": "application:quit" }
+]

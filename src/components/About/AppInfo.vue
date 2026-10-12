@@ -1,7 +1,7 @@
 <template>
   <div class="app-info">
     <div class="app-version">
-      <mo-logo :width="93" :height="21" style="vertical-align: bottom" />
+      <mo-logo :width="87" :height="21" style="vertical-align: bottom" />
       <span>Version {{ version }}</span>
     </div>
     <div class="app-icon"></div>

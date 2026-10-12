@@ -89,7 +89,6 @@ export default {
   'resume-all-task-success': 'успешно възобновени всички задачи',
   'resume-all-task-fail': 'грешка при възобновяване на всички задачи',
   'select-all-task': 'Изберете всички задачи',
-  'clear-recent-tasks': 'Изчистване на последните задачи',
   'purge-record': 'Изчистване на записките за задачи',
   'purge-record-success': 'успешно изчистени записи на задачи',
   'purge-record-fail': 'грешка при изчистване на записите за задачи',

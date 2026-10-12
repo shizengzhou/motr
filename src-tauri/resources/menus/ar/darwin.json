@@ -1,0 +1,73 @@
+{
+  "menu": [
+    {
+      "id": "menu.app", "text": "موتركس",
+      "submenu": [
+        { "id": "app.about", "text": "حول موتركس", "command": "application:about", "command-before": "application:show?page=index" },
+        { "type": "separator" },
+        { "id": "app.preferences", "text": "التفضيلات...", "command": "application:preferences" },
+        { "id": "app.check-for-updates", "text": "التحقق من وجود تحديثات ...", "command": "application:check-for-updates" },
+        { "id": "app.hide", "text": "إخفاء موتركس", "role": "hide" },
+        { "id": "app.hide-others", "text": "إخفاء الآخرين", "role": "hideothers" },
+        { "id": "app.unhide", "text": "إظهار الكل", "role": "unhide" },
+        { "type": "separator" },
+        { "id": "app.quit", "text": "الخروج من موتركس", "role": "quit" }
+      ]
+    },
+    {
+      "id": "menu.task", "text": "التحميل",
+      "submenu": [
+        { "id": "task.new-task", "text": "اضافة تحميل جديد", "command": "application:new-task", "command-after": "application:show?page=index" },
+        { "id": "task.new-bt-task", "text": "اضافة تحميل تورنت جديد", "command": "application:new-bt-task", "command-after": "application:show?page=index" },
+        { "id": "task.open-file", "text": "فتح ملف تورنت...", "command": "application:open-file", "command-before": "application:show?page=index" },
+        { "type": "separator" },
+        { "id": "app.task-list", "text": "قائمة التحميلات", "command": "application:task-list" },
+        { "id": "task.pause-task", "text": "إيقاف مؤقت", "command": "application:pause-task" },
+        { "id": "task.resume-task", "text": "إستئناف التحميل", "command": "application:resume-task" },
+        { "id": "task.delete-task", "text": "حذف التحميل", "command": "application:delete-task" },
+        { "id": "task.move-task-up", "text": "تحريك التحميل لأعلى", "command": "application:move-task-up" },
+        { "id": "task.move-task-down", "text": "تحريك التحميل لأسغل", "command": "application:move-task-down" },
+        { "type": "separator" },
+        { "id": "task.pause-all-task", "text": "إيقاف جميع التحميلات", "command": "application:pause-all-task" },
+        { "id": "task.resume-all-task", "text": "إستئناف جميع التحميلات", "command": "application:resume-all-task" },
+        { "id": "task.select-all-task", "text": "تحديد جميع التحميلات", "command": "application:select-all-task" }
+      ]
+    },
+    {
+      "id": "menu.edit", "text": "تعديل",
+      "submenu": [
+        { "id": "edit.undo", "text": "تراجع", "role": "undo" },
+        { "id": "edit.redo", "text": "إعادة", "role": "redo" },
+        { "type": "separator" },
+        { "id": "edit.cut", "text": "قص", "role": "cut" },
+        { "id": "edit.copy", "text": "نسخ", "role": "copy" },
+        { "id": "edit.paste", "text": "لصق", "role": "paste" },
+        { "id": "edit.delete", "text": "حذف", "role": "delete" },
+        { "id": "edit.select-all", "text": "تحديد الكل", "role": "selectall" }
+      ]
+    },
+    {
+      "id": "menu.window", "text": "النافذة", "role": "window",
+      "submenu": [
+        { "id": "window.close", "text": "إغلاق", "role": "close" },
+        { "id": "window.minimize", "text": "تصغير", "role": "minimize" },
+        { "id": "window.zoom", "text": "تكبير", "role": "zoom" },
+        { "id": "window.toggle-fullscreen", "text": "تفعيل وضع ملء الشاشة", "role": "togglefullscreen" },
+        { "type": "separator" },
+        { "id": "window.front", "text": "إحضار الكل إلى المقدمة", "role": "front" }
+      ]
+    },
+    {
+      "id": "menu.help", "text": "المساعدة", "role": "help",
+      "submenu": [
+        { "id": "help.official-website", "text": "موقع موتركس", "command": "help:official-website" },
+        { "id": "help.manual", "text": "دليل الاستخدام", "command": "help:manual" },
+        { "id": "help.release-notes", "text": "ملاحظات الإصدار...", "command": "help:release-notes" },
+        { "type": "separator" },
+        { "id": "help.report-problem", "text": "الإبلاغ عن مشكلة", "command": "help:report-problem" },
+        { "type": "separator" },
+        { "id": "help.toggle-dev-tools", "text": "تفعيل أدوات المطور", "role": "toggledevtools" }
+      ]
+    }
+  ]
+}

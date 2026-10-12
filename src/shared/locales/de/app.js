@@ -1,14 +1,14 @@
 export default {
   'task-list': 'Aufgaben',
   'add-task': 'Aufgabe hinzufügen',
-  about: 'Über Motrix',
+  about: 'Über Motr',
   preferences: 'Einstellungen...',
   'check-for-updates': 'Nach Updates suchen...',
   'check-updates-now': 'Jetzt prüfen',
   'checking-for-updates': 'Nach Updates suchen ...',
   'check-for-updates-title': 'Nach Updates suchen',
   'update-available-message':
-    'Eine neue Version von Motrix ist verfügbar, jetzt aktualisieren?',
+    'Eine neue Version von Motr ist verfügbar, jetzt aktualisieren?',
   'update-not-available-message': 'Sie sind auf dem neuesten Stand!',
   'update-downloaded-message': 'Bereit zur Installation...',
   'update-error-message': 'Aktualisierungsfehler',
@@ -18,11 +18,11 @@ export default {
   'system-error-title': 'Systemfehler',
   'system-error-message':
     'Die Anwendung konnte nicht gestartet werden: {{message}}',
-  hide: 'Motrix verbergen',
+  hide: 'Motr verbergen',
   'hide-others': 'Andere verbergen',
   unhide: 'Alles anzeigen',
-  show: 'Motrix anzeigen',
-  quit: 'Motrix beenden',
+  show: 'Motr anzeigen',
+  quit: 'Motr beenden',
   'under-development-message':
     'Entschuldigung, diese Funktion befindet sich in der Entwicklung...',
   yes: 'Ja',

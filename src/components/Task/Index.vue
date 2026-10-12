@@ -151,7 +151,7 @@ export default {
     },
     showAddTaskDialog(uri, options = {}) {
       const { header, ...rest } = options;
-      console.log('[Motrix] show add task dialog options: ', options);
+      console.log('[Motr] show add task dialog options: ', options);
 
       const headers = parseHeader(header);
       const newOptions = {
@@ -243,7 +243,7 @@ export default {
         delayDeleteTaskFiles(task, index * 200)
       );
       Promise.allSettled(promises).then((results) => {
-        console.log('[Motrix] batch delete task files: ', results);
+        console.log('[Motr] batch delete task files: ', results);
       });
     },
     removeTaskItems(gids) {
@@ -293,7 +293,7 @@ export default {
       const uri = getTaskUri(task);
 
       this.$store.dispatch('task/getTaskOption', gid).then((data) => {
-        console.log('[Motrix] get task option:', data);
+        console.log('[Motr] get task option:', data);
         const { dir, header, split } = data;
         const options = {
           dir,
@@ -415,7 +415,7 @@ export default {
       const count = `${selectedGidListCount}`;
       const { confirmed, deleteWithFiles: checked } =
         await this.confirmDeleteTask({
-          title: this.$t('task.delete-selected-task'),
+          title: this.$t('task.delete-selected-tasks'),
           message: this.$t('task.batch-delete-task-confirm', { count }),
           checkboxLabel: this.$t('task.delete-task-label'),
           deleteWithFiles,

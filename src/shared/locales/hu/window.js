@@ -1,5 +1,4 @@
 export default {
-  reload: 'Újratöltés',
   close: 'Bezáras',
   minimize: 'Kis méret',
   zoom: 'Zoom',
