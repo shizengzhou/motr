@@ -1,9 +1,18 @@
 <template>
   <div style="display: none">
-    <img id="tray-icon-light-normal" src="static/mo-tray-light-normal@2x.png" />
-    <img id="tray-icon-light-active" src="static/mo-tray-light-active@2x.png" />
-    <img id="tray-icon-dark-normal" src="static/mo-tray-dark-normal@2x.png" />
-    <img id="tray-icon-dark-active" src="static/mo-tray-dark-active@2x.png" />
+    <!-- 路径以 / 开头：这几张图在 public/static 下（原 Electron 版的 webpack 输出目录），
+         带 / 才会被当成"原样保留的 public 资源"；写成裸的 `static/xxx.png` 会被
+         @vitejs/plugin-vue2 转成模块引用，`pnpm build` 时 Rollup 解析不到直接失败 -->
+    <img
+      id="tray-icon-light-normal"
+      src="/static/mo-tray-light-normal@2x.png"
+    />
+    <img
+      id="tray-icon-light-active"
+      src="/static/mo-tray-light-active@2x.png"
+    />
+    <img id="tray-icon-dark-normal" src="/static/mo-tray-dark-normal@2x.png" />
+    <img id="tray-icon-dark-active" src="/static/mo-tray-dark-active@2x.png" />
   </div>
 </template>
 

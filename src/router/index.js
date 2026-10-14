@@ -59,16 +59,16 @@ export default new Router({
                 subnav: { current: 'advanced' },
               },
             },
-            {
-              path: 'lab',
-              components: {
-                subnav: PreferenceSubnav,
-                form: PreferenceLab,
-              },
-              props: {
-                subnav: { current: 'lab' },
-              },
-            },
+            // {
+            //   path: 'lab',
+            //   components: {
+            //     subnav: PreferenceSubnav,
+            //     form: PreferenceLab,
+            //   },
+            //   props: {
+            //     subnav: { current: 'lab' },
+            //   },
+            // },
           ],
         },
       ],

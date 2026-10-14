@@ -20,7 +20,7 @@
         </i>
         <span>{{ $t('preferences.advanced') }}</span>
       </li>
-      <li
+      <!-- <li
         @click="() => nav('lab')"
         :class="[current === 'lab' ? 'active' : '']"
       >
@@ -28,7 +28,7 @@
           <mo-icon name="preference-lab" width="20" height="20" />
         </i>
         <span>{{ $t('preferences.lab') }}</span>
-      </li>
+      </li> -->
     </ul>
   </nav>
 </template>

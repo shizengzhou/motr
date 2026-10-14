@@ -223,6 +223,32 @@ impl Default for SystemConfig {
 }
 
 impl SystemConfig {
+    /// 读 system.json：**先铺上依赖 app handle 的默认值，再用存档里的键覆盖**。
+    ///
+    /// 不能写成 `from_store(...).unwrap_or_else(|_| with_app_handle(...))`：
+    /// store 只要读得动就返回 `Ok`（空文件、只存了几个键都算 `Ok`），那句兜底永远不跑，
+    /// 于是 `dir` / `dht-file-path*` 这些"默认值得靠 app handle 才算得出来"的字段
+    /// 就成了 `Default` 里的空串。
+    ///
+    /// 触发场景：设置页的「恢复初始设置」清空 system.json 之后（以及全新安装）。
+    /// 表现是设置里「存储路径」变空、新建任务对话框的存储路径也空，
+    /// 而且 aria2 会拿到一个空的 `--dir`。
+    pub fn from_store_with_defaults<R: Runtime>(
+        app_handle: &AppHandle<R>,
+        store: &Store<R>,
+    ) -> Self {
+        let stored = store.entries().into_iter().collect();
+
+        match merge_system_config(Self::with_app_handle(app_handle), stored) {
+            Ok(config) => config,
+            Err(err) => {
+                log::warn!("[Motr] merge system.json failed: {err}");
+
+                Self::with_app_handle(app_handle)
+            }
+        }
+    }
+
     pub fn with_app_handle<R: Runtime>(app_handle: &AppHandle<R>) -> Self {
         let mut config = Self::default();
 
@@ -243,6 +269,25 @@ impl SystemConfig {
 
         serde_json::from_value(serde_json::Value::Object(map)).map_err(|err| err.to_string())
     }
+}
+
+/// 把存档里的值盖在默认值上（存档里没有的键保持默认）。
+///
+/// 从 `from_store_with_defaults` 里抽出来的纯函数：那边要 AppHandle，这里只要能序列化的
+/// 默认值就能测 —— "清空/少键的存档不能把 app handle 算出来的默认值抹掉"这条断言靠它守
+fn merge_system_config(
+    defaults: SystemConfig,
+    stored: serde_json::Map<String, serde_json::Value>,
+) -> Result<SystemConfig, String> {
+    let mut merged = serde_json::to_value(defaults)
+        .map_err(|err| err.to_string())?
+        .as_object()
+        .cloned()
+        .unwrap_or_default();
+
+    merged.extend(stored);
+
+    serde_json::from_value(serde_json::Value::Object(merged)).map_err(|err| err.to_string())
 }
 
 /// 注意：三个子结构体的键不能重名 —— flatten 会把它们摊到同一层，
@@ -512,6 +557,28 @@ mod tests {
         assert_eq!(system.dht_listen_port, default_system.dht_listen_port);
         assert_eq!(system.user_agent, default_system.user_agent);
         assert_eq!(system.dir, default_system.dir);
+    }
+
+    /// 存档里只存了零星几个键（或整个被清空）时，"靠 app handle 算出来的默认值"
+    /// 不能被抹成空 —— 「恢复初始设置」清空 system.json 之后就是这个场景
+    #[test]
+    fn stored_values_override_handle_defaults() {
+        let mut defaults = SystemConfig::default();
+        defaults.dir = "/Users/me/Downloads".to_string();
+        defaults.dht_file_path = "/data/dht.dat".to_string();
+
+        // 空存档（恢复初始设置后的 system.json）：默认值原样保留
+        let merged = merge_system_config(defaults.clone(), Default::default()).unwrap();
+        assert_eq!(merged.dir, "/Users/me/Downloads");
+        assert_eq!(merged.dht_file_path, "/data/dht.dat");
+
+        // 存档里有的键要生效，没有的继续用默认值
+        let stored = [("listen-port".to_string(), serde_json::json!(12345))]
+            .into_iter()
+            .collect();
+        let merged = merge_system_config(defaults, stored).unwrap();
+        assert_eq!(merged.listen_port, 12345, "存档里的键要盖过默认值");
+        assert_eq!(merged.dir, "/Users/me/Downloads", "没存过的键保持默认");
     }
 
     /// 默认 scope 的三个值必须和前端 `PROXY_SCOPES`（@shared/constants.js）一致，

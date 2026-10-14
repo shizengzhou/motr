@@ -159,10 +159,10 @@ pub fn get_app_config(app_handle: AppHandle) -> Result<Config, String> {
 
     // system.json 里有数据就用文件里的，缺失的键（或整份文件不存在）回落到默认值
     let system_config = match app_handle.store("system.json") {
-        Ok(store) => SystemConfig::from_store(&store).unwrap_or_else(|err| {
-            log::warn!("load system.json failed: {err}");
-            SystemConfig::with_app_handle(&app_handle)
-        }),
+        // 先铺 with_app_handle 的默认值再盖存档：存档可能是空的（「恢复初始设置」
+        // 或全新安装），直接把空存档反序列化会拿到空的 dir / dht-file-path。
+        // 详见 config_manager::SystemConfig::from_store_with_defaults
+        Ok(store) => SystemConfig::from_store_with_defaults(&app_handle, &store),
         Err(err) => {
             log::warn!("open system.json failed: {err}");
             SystemConfig::with_app_handle(&app_handle)
