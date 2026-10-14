@@ -9,6 +9,7 @@ dependencies = [
  "base64 0.22.1",
  "igd-next",
  "log",
+ "objc2",
  "serde",
  "serde_json",
  "tauri",

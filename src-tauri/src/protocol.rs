@@ -26,6 +26,7 @@
 //! 这里的 `AppHandle` 不带泛型，因为要调 `menu::send_command_to_frontend`
 //! 与 `window::show_main_window`（它们都是具体的 `&AppHandle`）。
 
+use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
 use serde_json::{Map, Value, json};
@@ -242,6 +243,13 @@ pub fn handle_urls(app: &AppHandle, urls: impl IntoIterator<Item = Url>) {
         // 原项目 handleProtocol：先把窗口带到前台，再处理
         window::show_main_window(app);
 
+        // 文件关联：系统把 `.torrent` 文件递进来（macOS 走 RunEvent::Opened，
+        // 传的是 file:// URL）。走和菜单「打开种子文件」完全一样的一条路
+        if url.scheme() == "file" {
+            open_torrent_file(app, &url);
+            continue;
+        }
+
         match action_of(&url) {
             Action::NewTask(resource) => dispatch(
                 app,
@@ -254,6 +262,81 @@ pub fn handle_urls(app: &AppHandle, urls: impl IntoIterator<Item = Url>) {
             Action::RevealInFolder { path, gid } => reveal_in_folder(app, path, gid),
             Action::Ignore => log::debug!("[Motr] 忽略不认识的协议链接: {url}"),
         }
+    }
+}
+
+/// 双击（或 `open -a`）`.torrent` 时系统把文件交给我们：读出来转成前端要的
+/// `{ name, dataURL }`，下发 `application:new-bt-task-with-file`。
+fn open_torrent_file(app: &AppHandle, url: &Url) {
+    let path = match url.to_file_path() {
+        Ok(path) => path,
+        Err(_) => {
+            log::warn!("[Motr] 无法把 {url} 解析成本地路径");
+
+            return;
+        }
+    };
+
+    open_torrent_path(app, &path);
+}
+
+/// 处理命令行参数里的文件关联。
+///
+/// 平台差异：
+///
+/// - **macOS / iOS / Android**：系统把文件放进 `RunEvent::Opened`（首次启动和
+///   "已经在运行"都走那条，见 lib.rs），命令行参数里不会出现种子文件
+/// - **Windows / Linux**：关联就是命令行参数 —— 首次启动在 [`std::env::args`]，
+///   再次启动由 single-instance 插件的回调收到（它开了 `deep-link` feature，
+///   会把其中的 **URL** 参数先转给 deep-link 插件，所以这里不能再处理 URL，
+///   否则同一个链接会弹两次窗）
+///
+/// 因此这里只挑"看起来是本地种子文件"的参数，其余（argv[0]、`--xxx`、
+/// macOS 的 `-psn_...`、以及各种 URL）一律跳过。
+pub fn handle_open_args(app: &AppHandle, args: impl IntoIterator<Item = String>, cwd: &str) {
+    for arg in args {
+        if !looks_like_torrent_arg(&arg) {
+            continue;
+        }
+
+        // 相对路径按调用方给的工作目录解析（系统递进来的一般是绝对路径，
+        // 但用户也可能在终端里 `Motr ./x.torrent`）
+        let path = PathBuf::from(&arg);
+        let path = if path.is_absolute() {
+            path
+        } else {
+            Path::new(cwd).join(path)
+        };
+
+        open_torrent_path(app, &path);
+    }
+}
+
+/// 参数看上去是不是本地种子文件：不是 URL、且以 `.torrent` 结尾（纯判断，方便测）
+fn looks_like_torrent_arg(arg: &str) -> bool {
+    // URL 参数交给 deep-link 那条路（见 [`handle_open_args`] 的说明）。
+    // 注意 `magnet:` / `thunder:` 不带 `//`，要单独看
+    let lower = arg.to_ascii_lowercase();
+    if lower.contains("://") || lower.starts_with("magnet:") || lower.starts_with("thunder:") {
+        return false;
+    }
+
+    Path::new(arg)
+        .extension()
+        .is_some_and(|ext| ext.eq_ignore_ascii_case("torrent"))
+}
+
+/// 本地种子文件的共同落点：读出来转成前端要的 `{ name, dataURL }` 并下发命令。
+///
+/// 复用菜单那条路（`menu::torrent_payload`），并且同样经过 [`dispatch`] 的
+/// "前端没就绪就先攒着"队列 —— 冷启动直接被文件拉起时就靠这个
+fn open_torrent_path(app: &AppHandle, path: &Path) {
+    // 窗口默认是隐藏的（托盘型应用），不显式显示的话用户什么都看不到
+    window::show_main_window(app);
+
+    match menu::torrent_payload(path) {
+        Ok(payload) => dispatch(app, "application:new-bt-task-with-file", payload),
+        Err(err) => log::warn!("[Motr] 打开种子文件失败: {err}"),
     }
 }
 
@@ -307,6 +390,33 @@ pub fn ready(app: &AppHandle) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// 命令行参数的筛选：只认本地种子文件，URL 一律交给 deep-link 那条路
+    ///（否则同一个链接会被处理两次、弹两次新建任务）
+    #[test]
+    fn only_local_torrent_args_are_picked() {
+        for ok in [
+            "/Users/me/Downloads/a.torrent",
+            r"C:\Users\me\Downloads\b.TORRENT",
+            "./c.torrent",
+            "d.torrent",
+        ] {
+            assert!(looks_like_torrent_arg(ok), "应被识别为种子文件: {ok}");
+        }
+
+        for skip in [
+            "/Applications/Motr.app/Contents/MacOS/Motr", // argv[0]：可执行文件
+            "-psn_0_12345",                               // macOS 启动参数
+            "--hidden",                                   // 普通开关
+            "magnet:?xt=urn:btih:abc&dn=foo.torrent",     // URL：deep-link 管
+            "thunder://QUFodHRwOi8vZXhhbXBsZS5jb20vYS50b3JyZW50",
+            "https://example.com/a.torrent",
+            "/tmp/notatorrent", // 没有扩展名
+            "/tmp/a.torrent.bak",
+        ] {
+            assert!(!looks_like_torrent_arg(skip), "不该被识别: {skip}");
+        }
+    }
 
     fn url(raw: &str) -> Url {
         Url::parse(raw).unwrap_or_else(|err| panic!("{raw} 解析失败: {err}"))

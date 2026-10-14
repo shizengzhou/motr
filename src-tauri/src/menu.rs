@@ -353,7 +353,10 @@ fn pick_torrent_file(app: &AppHandle) {
 /// 读种子文件 -> 前端要的 `{ name, dataURL }`
 ///
 /// 与原项目一致：dataURL 是**裸 base64**（前端用 `base64StringToBlob` 还原成 File）
-fn torrent_payload(path: &Path) -> Result<Value, String> {
+///
+/// 两个调用方：菜单里的「打开种子文件」，以及系统把 `.torrent` 递进来时
+/// （文件关联，见 `protocol::open_torrent_file`）
+pub(crate) fn torrent_payload(path: &Path) -> Result<Value, String> {
     if !path
         .extension()
         .is_some_and(|ext| ext.eq_ignore_ascii_case("torrent"))

@@ -1,4 +1,6 @@
+use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::time::Duration;
 
 use tauri::{AppHandle, Manager, WindowEvent};
 use tauri_plugin_window_state::{StateFlags, WindowExt};
@@ -133,6 +135,9 @@ pub(crate) fn show_main_window(app: &AppHandle) {
     #[cfg(target_os = "macos")]
     let _ = app.show();
 
+    #[cfg(target_os = "macos")]
+    activate_app(app);
+
     if let Some(window) = app.get_webview_window("main") {
         let _ = window.show();
         let _ = window.unminimize();
@@ -140,9 +145,187 @@ pub(crate) fn show_main_window(app: &AppHandle) {
     }
 }
 
+/// 「用户主动重启后把窗口带到前台」的标记文件名
+///
+/// 重启是 `app.restart()` → 重新 exec 同一个二进制，应用数据目录不变，
+/// 所以用文件把这个意图传给下一个进程（也省得给重启加命令行参数）
+const RESTART_FOCUS_FILE: &str = "focus-after-restart";
+
+/// 标记只在刚重启起来那一下有效：中途崩掉或放了很久的残留标记不该让窗口突然冒出来
+const RESTART_FOCUS_TTL: Duration = Duration::from_secs(60);
+
+/// 「本次启动是用户主动重启，聚焦这一枪还没补」的进程内标记
+///
+/// 为什么要分两步：`setup` 是 Tauri 在 `RunEvent::Ready` 处理里同步调的，
+/// 那一刻窗口刚创建、应用尚未激活，`set_focus()` 常常不算数（启动期焦点也容易
+/// 被系统或别的程序抢走）。所以 `setup` 只负责让窗口**可见**，聚焦留到这里，
+/// 由事件循环在应用真正跑起来之后延迟补一枪 —— 见 lib.rs 的 `RunEvent::Ready`
+static PENDING_FOCUS: AtomicBool = AtomicBool::new(false);
+
+fn restart_focus_path(app: &AppHandle) -> Option<PathBuf> {
+    app.path()
+        .app_data_dir()
+        .ok()
+        .map(|dir| dir.join(RESTART_FOCUS_FILE))
+}
+
+/// 重启前记下"这次是用户主动重启"（设置里改端口、装完更新都走 `commands::relaunch`）
+pub(crate) fn mark_focus_after_restart(app: &AppHandle) {
+    let Some(path) = restart_focus_path(app) else {
+        return;
+    };
+
+    if let Some(parent) = path.parent() {
+        if let Err(err) = std::fs::create_dir_all(parent) {
+            log::warn!("[Motr] 创建重启标记目录失败: {err}");
+
+            return;
+        }
+    }
+
+    if let Err(err) = std::fs::write(&path, b"1") {
+        log::warn!("[Motr] 写重启标记失败: {err}");
+    } else {
+        // warn 级（release 里 info 会被编掉）：排查"重启后窗口怎么没到前台"时，
+        // 第一件事就是确认这次重启有没有打过标记
+        log::warn!("[Motr] 已标记：本次重启后要显示并聚焦主窗口");
+    }
+}
+
+/// 启动时读取并消费重启标记：是"用户主动重启"且标记还新鲜就返回 `true`
+///
+/// 同时把 [`PENDING_FOCUS`] 置位，供事件循环里那次延迟聚焦取用
+pub(crate) fn take_focus_after_restart(app: &AppHandle) -> bool {
+    let Some(path) = restart_focus_path(app) else {
+        return false;
+    };
+
+    let Ok(meta) = std::fs::metadata(&path) else {
+        return false;
+    };
+
+    // 无论判定结果如何都不留残留
+    let _ = std::fs::remove_file(&path);
+
+    let age = meta.modified().ok().and_then(|time| time.elapsed().ok());
+
+    if marker_is_fresh(age) {
+        PENDING_FOCUS.store(true, Ordering::Relaxed);
+
+        true
+    } else {
+        false
+    }
+}
+
+/// 取走"还需要补一次聚焦"的标记（取走即清零，只会聚焦一次）
+pub(crate) fn focus_after_restart_pending() -> bool {
+    PENDING_FOCUS.swap(false, Ordering::Relaxed)
+}
+
+/// 标记是否够新（纯判断，方便测）
+fn marker_is_fresh(age: Option<Duration>) -> bool {
+    matches!(age, Some(age) if age <= RESTART_FOCUS_TTL)
+}
+
+/// macOS：把应用激活到前台。
+///
+/// 为什么不能只靠 `window.set_focus()`：tao 内部用的是
+/// `activateIgnoringOtherApps:YES`，而这个 API 从 macOS 14 起被系统忽略
+/// （协作式激活模型）—— 现象就是"窗口显示出来了但压在别的应用后面，
+/// 必须手动点一下 Dock 才行"（点 Dock 是一次用户发起的激活，永远有效）。
+///
+/// 这里优先用现代 API `NSApplication.activate()`（macOS 14+），
+/// 老系统回落到 `activateIgnoringOtherApps:`。
+#[cfg(target_os = "macos")]
+fn activate_app(app: &AppHandle) {
+    // AppKit 的激活调用必须在主线程；不在主线程（比如异步重试任务里）就派发回去
+    if objc2::MainThreadMarker::new().is_some() {
+        activate_app_on_main_thread();
+    } else {
+        let _ = app.run_on_main_thread(activate_app_on_main_thread);
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn activate_app_on_main_thread() {
+    use objc2::msg_send;
+    use objc2::runtime::{AnyClass, AnyObject};
+
+    unsafe {
+        let Some(class) = AnyClass::get(c"NSApplication") else {
+            return;
+        };
+
+        let app: *mut AnyObject = msg_send![class, sharedApplication];
+
+        if app.is_null() {
+            return;
+        }
+
+        // macOS 14+：NSApplication.activate()；老系统没有这个选择子，回落到旧 API
+        let modern = objc2::sel!(activate);
+        if msg_send![app, respondsToSelector: modern] {
+            let _: () = msg_send![app, activate];
+        } else {
+            let _: () = msg_send![app, activateIgnoringOtherApps: true];
+        }
+    }
+}
+
+/// 重启后把窗口带回来并聚焦：应用刚起来时激活可能被系统忽略、焦点也可能被抢，
+/// 所以隔一小段时间重试，直到窗口真的成为 key window（`is_focused`）为止。
+///
+/// 拿到焦点就收手 —— 不会跟用户后面手动切换窗口的行为打架；用完次数也放弃，
+/// 只记一条告警
+pub(crate) fn focus_main_window_until_focused(app: &AppHandle) {
+    const INTERVAL: Duration = Duration::from_millis(400);
+    const MAX_ATTEMPTS: u32 = 12; // 约 5 秒
+
+    let handle = app.clone();
+
+    tauri::async_runtime::spawn(async move {
+        for attempt in 1..=MAX_ATTEMPTS {
+            tokio::time::sleep(INTERVAL).await;
+
+            let focused = handle
+                .get_webview_window("main")
+                .and_then(|window| window.is_focused().ok())
+                .unwrap_or(false);
+
+            if focused {
+                // 用 warn 级：release 构建里 log 的编译期等级会把 info 整条编掉
+                log::warn!("[Motr] 主动重启：主窗口已获得焦点（第 {attempt} 次尝试）");
+
+                return;
+            }
+
+            // 显示/激活都要在主线程上做（AppKit 不是线程安全的）
+            let target = handle.clone();
+            let _ = handle.run_on_main_thread(move || {
+                show_main_window(&target);
+            });
+        }
+
+        log::warn!("[Motr] 主动重启：重试 {MAX_ATTEMPTS} 次后主窗口仍未获得焦点");
+    });
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// 重启标记只在刚重启那一下有效：太久、或者读不到时间，都不认
+    #[test]
+    fn restart_marker_must_be_fresh() {
+        assert!(marker_is_fresh(Some(Duration::from_secs(0))));
+        assert!(marker_is_fresh(Some(RESTART_FOCUS_TTL)));
+
+        assert!(!marker_is_fresh(None));
+        assert!(!marker_is_fresh(Some(
+            RESTART_FOCUS_TTL + Duration::from_secs(1)
+        )));
+    }
 
     /// 失焦隐藏的判据：设置开着时任何模式都隐藏；设置关着时只有「托盘应用」模式隐藏
     #[test]

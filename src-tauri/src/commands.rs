@@ -1,10 +1,9 @@
 use tauri::{AppHandle, Manager};
 use tauri_plugin_os::{arch, platform};
-use tauri_plugin_store::StoreExt;
 
-use crate::config_manager::{self, Config, SystemConfig, UserConfig};
+use crate::config_manager::{self, Config};
 use crate::context::{Context, get_aria2_conf_path, get_session_path};
-use crate::{auto_launch, engine, menu, protocol, run_mode, tray, upnp};
+use crate::{auto_launch, engine, menu, protocol, run_mode, tray, upnp, window};
 
 /// 设置页点「恢复初始设置」时调用：停引擎 → 清空两份配置 → 重启应用。
 ///
@@ -19,9 +18,7 @@ pub fn factory_reset(app: AppHandle) -> Result<(), String> {
 
     config_manager::reset_stores(&app)?;
 
-    restart_after_response(app);
-
-    Ok(())
+    restart_actively(app)
 }
 
 /// 重启应用（前端 `utils/native.js` 的 `restartApp`、「更新下载完重启」也用它）。
@@ -31,6 +28,18 @@ pub fn factory_reset(app: AppHandle) -> Result<(), String> {
 #[tauri::command]
 pub fn relaunch(app: AppHandle) -> Result<(), String> {
     engine::stop(&app);
+
+    restart_actively(app)
+}
+
+/// 用户主动重启的公共收尾：打上"重启后显示并聚焦"的标记 → 重启。
+///
+/// 标记这一步不能省：新进程只有看到它，才会跳过"托盘模式 / 开机自启就不显示窗口"
+/// 那套判断，并在就绪后主动激活到前台（见 lib.rs 的启动显示逻辑与 window.rs 的
+/// `focus_main_window_until_focused`）。漏掉的表现就是"重启后窗口压在别的应用后面，
+/// 得点一下 Dock 才出来"—— `factory_reset` 之前就漏了这一步。
+fn restart_actively(app: AppHandle) -> Result<(), String> {
+    window::mark_focus_after_restart(&app);
 
     restart_after_response(app);
 
@@ -145,29 +154,12 @@ pub fn get_app_config(app_handle: AppHandle) -> Result<Config, String> {
         aria2_conf_path: get_aria2_conf_path(&app_handle),
     };
 
-    // user.json 里有数据就用文件里的，缺失的键（或整份文件不存在）回落到默认值
-    let user_config = match app_handle.store("user.json") {
-        Ok(store) => UserConfig::from_store(&store).unwrap_or_else(|err| {
-            log::warn!("load user.json failed: {err}");
-            UserConfig::default()
-        }),
-        Err(err) => {
-            log::warn!("open user.json failed: {err}");
-            UserConfig::default()
-        }
-    };
-
-    // system.json 里有数据就用文件里的，缺失的键（或整份文件不存在）回落到默认值
-    let system_config = match app_handle.store("system.json") {
-        // 先铺 with_app_handle 的默认值再盖存档：存档可能是空的（「恢复初始设置」
-        // 或全新安装），直接把空存档反序列化会拿到空的 dir / dht-file-path。
-        // 详见 config_manager::SystemConfig::from_store_with_defaults
-        Ok(store) => SystemConfig::from_store_with_defaults(&app_handle, &store),
-        Err(err) => {
-            log::warn!("open system.json failed: {err}");
-            SystemConfig::with_app_handle(&app_handle)
-        }
-    };
+    // user.json / system.json：重读磁盘（前端可能刚写过）→ 缺的键用默认值兜底 →
+    // 把合并结果写回文件。原版用 electron-store 的 defaults，配置一读就把默认值落盘，
+    // 所以配置文件始终是完整可读的；移植后丢了这步，文件里只剩"被改过的键"
+    //（例：last-check-update-time 从没被写过就查不到它当前是几）。
+    let user_config = config_manager::load_user_config(&app_handle);
+    let system_config = config_manager::load_system_config(&app_handle);
 
     Ok(Config {
         context,

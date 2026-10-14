@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager, Runtime};
 use tauri_plugin_store::{Store, StoreExt};
@@ -419,9 +421,125 @@ pub fn reset_stores<R: Runtime>(app_handle: &AppHandle<R>) -> Result<(), String>
     Ok(())
 }
 
+/// 让本进程的 store 缓存与磁盘对齐。
+///
+/// 前端（JS 侧的 `LazyStore`）会**直接**写 `user.json` / `system.json`，而本进程的
+/// store 缓存是启动时从磁盘加载的。不重读会踩两个坑：
+/// - 读：设置页保存后立刻重读，拿到的还是旧值；
+/// - 写：插件在 `RunEvent::Exit` 会把**缓存**写回文件（tauri-plugin-store 的
+///   `on_event`），于是前端这次会话写进去的东西被启动时的旧缓存覆盖掉
+///   （表现：`last-check-update-time` 永远是启动那一刻的旧值 ⇒ 每次启动都检查更新）。
+pub fn reload_store<R: Runtime>(app_handle: &AppHandle<R>, file: &str) {
+    match app_handle.store(file) {
+        Ok(store) => {
+            if let Err(err) = store.reload_ignore_defaults() {
+                log::warn!("[Motr] {file}: 重读磁盘失败: {err}");
+            }
+        }
+        Err(err) => log::warn!("[Motr] {file}: 打开失败: {err}"),
+    }
+}
+
+/// 把「默认值 + 存档」合并后的完整配置写回存档：缺失的键补齐、值不同的以合并结果为准。
+///
+/// 原版用 `electron-store` 的 `defaults`，配置一读就把默认值写进文件，所以
+/// `user.json` / `system.json` 永远是完整可读的（缺什么键一眼可见、也能照着文件手改）。
+/// 移植后只剩内存兜底 ⇒ 文件里只有"被改过的键"，看起来像配置丢了
+///（例：`last-check-update-time` 从没被写过，就查不到它当前是几）。
+///
+/// 调用前请先 `reload_store`（见那里的说明），否则会用旧缓存覆盖前端的写入。
+pub fn sync_store<R: Runtime, T: Serialize>(app_handle: &AppHandle<R>, file: &str, merged: &T) {
+    let Ok(store) = app_handle.store(file) else {
+        log::warn!("[Motr] {file}: 打开失败，跳过补默认值");
+        return;
+    };
+
+    let Ok(serde_json::Value::Object(target)) = serde_json::to_value(merged) else {
+        log::warn!("[Motr] {file}: 序列化失败，跳过补默认值");
+        return;
+    };
+
+    let stored: HashMap<String, serde_json::Value> = store.entries().into_iter().collect();
+    let pending = keys_to_write(&stored, &target);
+
+    if pending.is_empty() {
+        return;
+    }
+
+    for (key, value) in pending {
+        store.set(key, value);
+    }
+
+    if let Err(err) = store.save() {
+        log::warn!("[Motr] {file}: 写盘失败: {err}");
+    }
+}
+
+/// 存档里缺的、或与合并结果不一致的键（纯函数，便于测）
+///
+/// 只挑"要写的"，不删存档里多出来的键 —— 结构体里没有的键（老版本残留、
+/// 前端自己加的）原样保留。
+fn keys_to_write(
+    stored: &HashMap<String, serde_json::Value>,
+    merged: &serde_json::Map<String, serde_json::Value>,
+) -> Vec<(String, serde_json::Value)> {
+    merged
+        .iter()
+        .filter(|(key, value)| stored.get(key.as_str()) != Some(value))
+        .map(|(key, value)| (key.clone(), value.clone()))
+        .collect()
+}
+
+/// 读 user.json：重读磁盘 → 用默认值兜底 → 把合并结果落盘（保持配置文件完整）
+pub fn load_user_config<R: Runtime>(app_handle: &AppHandle<R>) -> UserConfig {
+    let Ok(store) = app_handle.store("user.json") else {
+        log::warn!("[Motr] 打开 user.json 失败，使用默认值");
+        return UserConfig::default();
+    };
+
+    reload_store(app_handle, "user.json");
+
+    let config = UserConfig::from_store(&store).unwrap_or_else(|err| {
+        log::warn!("[Motr] 解析 user.json 失败，使用默认值: {err}");
+        UserConfig::default()
+    });
+
+    sync_store(app_handle, "user.json", &config);
+
+    config
+}
+
+/// 读 system.json：重读磁盘 → 用（依赖 app handle 的）默认值兜底 → 落盘
+///
+/// 默认值里的 `dir` / `dht-file-path*` 要靠 app handle 现算，所以不能用 `Default`，
+/// 详见 `from_store_with_defaults`。
+pub fn load_system_config<R: Runtime>(app_handle: &AppHandle<R>) -> SystemConfig {
+    let Ok(store) = app_handle.store("system.json") else {
+        log::warn!("[Motr] 打开 system.json 失败，使用默认值");
+        return SystemConfig::with_app_handle(app_handle);
+    };
+
+    reload_store(app_handle, "system.json");
+
+    let config = SystemConfig::from_store_with_defaults(app_handle, &store);
+
+    sync_store(app_handle, "system.json", &config);
+
+    config
+}
+
+/// 退出前把两个存档的缓存刷新成磁盘上的最新内容。
+///
+/// 放在 `RunEvent::ExitRequested`（先于 `Exit` 触发）里执行，正好赶在
+/// tauri-plugin-store 写盘之前，避免用旧缓存覆盖前端本次会话的写入。
+pub fn refresh_stores<R: Runtime>(app_handle: &AppHandle<R>) {
+    for path in ["user.json", "system.json"] {
+        reload_store(app_handle, path);
+    }
+}
+
 /// 「下载协议」的两个开关（magnet / thunder）：读 user.json，缺键或读不到时按默认值
 ///（magnet 开、thunder 关，与原项目一致）
-///
 /// 开关能在运行中改（见 protocol.rs），所以这里是现读现用。
 pub fn protocols<R: Runtime>(app_handle: &AppHandle<R>) -> Protocols {
     app_handle
@@ -579,6 +697,51 @@ mod tests {
         let merged = merge_system_config(defaults, stored).unwrap();
         assert_eq!(merged.listen_port, 12345, "存档里的键要盖过默认值");
         assert_eq!(merged.dir, "/Users/me/Downloads", "没存过的键保持默认");
+    }
+
+    /// 补默认值时只写"缺的/不一致的"键：
+    /// - 内容一致时不动文件（否则每次启动都改 mtime、还会把前端写的值当成"差异"）
+    /// - 存档里多出来的键不删（老版本残留、前端自定义的键都要留着）
+    #[test]
+    fn only_missing_or_changed_keys_are_written() {
+        let merged: serde_json::Map<String, serde_json::Value> =
+            serde_json::from_value(serde_json::json!({
+                "auto-check-update": true,
+                "locale": "zh-CN",
+                "last-check-update-time": 0,
+            }))
+            .unwrap();
+
+        // 存档里已有正确的值 + 一个结构体里没有的键 ⇒ 只补缺的那个
+        let stored = [
+            ("auto-check-update".to_string(), serde_json::json!(true)),
+            ("locale".to_string(), serde_json::json!("zh-CN")),
+            ("legacy-key".to_string(), serde_json::json!("keep-me")),
+        ]
+        .into_iter()
+        .collect();
+
+        let pending = keys_to_write(&stored, &merged);
+        assert_eq!(pending.len(), 1, "只有缺失的 last-check-update-time 需要补");
+        assert_eq!(pending[0].0, "last-check-update-time");
+        assert_eq!(pending[0].1, serde_json::json!(0), "默认值本身也要落盘");
+
+        // 完全一致 ⇒ 一个都不用写
+        let stored = [
+            ("auto-check-update".to_string(), serde_json::json!(true)),
+            ("locale".to_string(), serde_json::json!("zh-CN")),
+            ("last-check-update-time".to_string(), serde_json::json!(0)),
+        ]
+        .into_iter()
+        .collect();
+        assert!(keys_to_write(&stored, &merged).is_empty());
+
+        // 值不同 ⇒ 以合并结果为准（前端改过的键要被落盘修正）
+        let stored = [("locale".to_string(), serde_json::json!("en-US"))]
+            .into_iter()
+            .collect();
+        let pending = keys_to_write(&stored, &merged);
+        assert!(pending.iter().any(|(key, _)| key == "locale"));
     }
 
     /// 默认 scope 的三个值必须和前端 `PROXY_SCOPES`（@shared/constants.js）一致，
