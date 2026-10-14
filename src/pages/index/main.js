@@ -15,6 +15,14 @@ import { getLocaleManager } from '@/components/Locale';
 import Icon from '@/components/Icons/Icon.vue';
 import Msg from '@/components/Msg';
 import { commands } from '@/components/CommandManager/instance';
+// 命令注册必须**同步**完成，所以这里是静态导入。
+//
+// 原来是 `import('./commands')`（没 await 的动态导入）：Vite 会把它拆成独立 chunk
+// 异步加载，而 Ipc.vue 一挂上 `command` 监听就立刻 invoke('protocol_ready')，
+// Rust 侧随即补发攒下的命令 —— 那一刻命令表还是空的，`execute()` 找不到处理函数、
+// 静默什么都不做。表现就是"右键用 Motr 打开种子，弹窗不出现"（冷启动必现，
+// 因为动态导入在 $mount 之后才被触发）。
+import './commands';
 import TrayWorker from '@/workers/tray.worker?worker';
 import { checkForUpdates } from '@/utils/updater';
 import {
@@ -129,7 +137,6 @@ function init(config) {
   }).$mount('#app');
 
   app.commands = commands;
-  import('./commands');
 
   app.trayWorker = initTrayWorker();
 
