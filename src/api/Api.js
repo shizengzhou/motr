@@ -3,6 +3,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { emit } from '@tauri-apps/api/event';
 import { LazyStore } from '@tauri-apps/plugin-store';
 import is from '@/utils/is';
+import { aria2ProxyOptions } from '@/utils/proxy';
 import { Aria2 } from '@shared/aria2';
 import {
   separateConfig,
@@ -91,6 +92,13 @@ export default class Api {
   }
 
   async savePreferenceToNativeStore(params = {}) {
+    // 代理：把 proxy 映射成 aria2 的 all-proxy/no-proxy 一起下发
+    //（原项目 Application.watchProxyChange 做的是同一件事），这样运行中的引擎立刻跟着变，
+    // system.json 里也留下同一份值
+    if (params.proxy) {
+      Object.assign(params, aria2ProxyOptions(params.proxy));
+    }
+
     const { user, system, others } = separateConfig(params);
     const config = {};
 

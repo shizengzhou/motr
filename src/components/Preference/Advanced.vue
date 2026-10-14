@@ -264,6 +264,7 @@
                 placeholder="BT Port"
                 :maxlength="8"
                 v-model="form.listenPort"
+                @change="onBtPortChange"
               >
                 <i slot="append" @click.prevent="onBtPortDiceClick">
                   <mo-icon name="dice" width="12" height="12" />
@@ -278,6 +279,7 @@
                 placeholder="DHT Port"
                 :maxlength="8"
                 v-model="form.dhtListenPort"
+                @change="onDhtPortChange"
               >
                 <i slot="append" @click.prevent="onDhtPortDiceClick">
                   <mo-icon name="dice" width="12" height="12" />
@@ -417,7 +419,8 @@ import ShowInFolder from '@/components/Native/ShowInFolder.vue';
 import SubnavSwitcher from '@/components/Subnav/SubnavSwitcher.vue';
 import userAgentMap from '@shared/ua';
 import {
-  EMPTY_STRING,
+  ENGINE_BT_PORT,
+  ENGINE_DHT_PORT,
   ENGINE_RPC_PORT,
   LOG_LEVELS,
   TRACKER_SOURCE_OPTIONS,
@@ -432,6 +435,7 @@ import {
   convertLineToComma,
   diffConfig,
   generateRandomInt,
+  normalizePort,
 } from '@shared/utils';
 import {
   convertTrackerDataToLine,
@@ -442,6 +446,9 @@ import '@/components/Icons/sync';
 import '@/components/Icons/refresh';
 import { getLanguage } from '@shared/locales';
 import { getLocaleManager } from '@/components/Locale';
+import { checkForUpdates } from '@/utils/updater';
+import { restartApp } from '@/utils/native';
+import { invoke } from '@tauri-apps/api/core';
 
 const initForm = (config) => {
   const {
@@ -566,16 +573,14 @@ export default {
       const lng = getLanguage(locale);
       getLocaleManager().changeLanguage(lng);
     },
-    onCheckUpdateClick() {
-      this.$electron.ipcRenderer.send(
-        'command',
-        'application:check-for-updates'
-      );
+    async onCheckUpdateClick() {
       this.$msg.info(this.$t('app.checking-for-updates'));
-      this.$store.dispatch('preference/fetchPreference').then((config) => {
-        const { lastCheckUpdateTime } = config;
-        this.form.lastCheckUpdateTime = lastCheckUpdateTime;
-      });
+
+      await checkForUpdates({ userCheck: true });
+
+      // 检查流程会写 last-check-update-time，回来后再读一次填到表单
+      const config = await this.$store.dispatch('preference/fetchPreference');
+      this.form.lastCheckUpdateTime = config.lastCheckUpdateTime;
     },
     syncTrackerFromSource() {
       this.trackerSyncing = true;
@@ -638,11 +643,23 @@ export default {
       const port = generateRandomInt(25000, 29999);
       this.form.dhtListenPort = port;
     },
+    onBtPortChange(value) {
+      this.form.listenPort = normalizePort(
+        value,
+        this.formOriginal.listenPort || ENGINE_BT_PORT
+      );
+    },
+    onDhtPortChange(value) {
+      this.form.dhtListenPort = normalizePort(
+        value,
+        this.formOriginal.dhtListenPort || ENGINE_DHT_PORT
+      );
+    },
     onRpcListenPortChange(value) {
-      console.log('onRpcListenPortChange===>', value);
-      if (EMPTY_STRING === value) {
-        this.form.rpcListenPort = this.rpcDefaultPort;
-      }
+      this.form.rpcListenPort = normalizePort(
+        value,
+        this.formOriginal.rpcListenPort || this.rpcDefaultPort
+      );
     },
     onRpcPortDiceClick() {
       const port = generateRandomInt(ENGINE_RPC_PORT, 20000);
@@ -666,11 +683,19 @@ export default {
       }).then((okClicked) => {
         if (okClicked) {
           this.$store.dispatch('task/purgeTaskRecord');
-          this.$store.dispatch('task/pauseAllTask').then(() => {
-            this.$electron.ipcRenderer.send(
-              'command',
-              'application:reset-session'
-            );
+          // 用 finally 而不是 then：暂停失败也不能把重置吞掉 ——
+          // 重置本身会把引擎连同任务一起清掉，暂停只是顺手做的
+          this.$store.dispatch('task/pauseAllTask').finally(() => {
+            // 停引擎 → 删掉 download.session → 重新起引擎
+            //（原项目 Application.resetSession，见 src-tauri/src/engine.rs）
+            console.info('[Motr] reset session: invoking main process');
+            invoke('reset_session')
+              .then(() => {
+                console.info('[Motr] reset session: accepted by main process');
+              })
+              .catch((err) => {
+                console.warn('[Motr] reset session fail:', err);
+              });
           });
         }
       });
@@ -683,10 +708,21 @@ export default {
         cancelLabel: this.$t('app.no'),
       }).then((okClicked) => {
         if (okClicked) {
-          this.$electron.ipcRenderer.send(
-            'command',
-            'application:factory-reset'
-          );
+          // 先把 aria2 会话落盘（未完成的任务不该被清掉，只清配置），
+          // 再让主进程清空 user.json / system.json 并重启
+          //（原项目 Application 里的 application:factory-reset，见 src-tauri/src/commands.rs）
+          this.$store.dispatch('task/saveSession').finally(() => {
+            console.info('[Motr] factory reset: invoking main process');
+            invoke('factory_reset')
+              .then(() => {
+                console.info(
+                  '[Motr] factory reset: accepted, app will restart'
+                );
+              })
+              .catch((err) => {
+                console.warn('[Motr] factory reset fail:', err);
+              });
+          });
         }
       });
     },
@@ -708,7 +744,7 @@ export default {
           ...changedConfig.basic,
         };
 
-        const { btAutoDownloadContent, btTracker, rpcListenPort } = data;
+        const { btAutoDownloadContent, btTracker } = data;
 
         if ('btAutoDownloadContent' in data) {
           data.followTorrent = btAutoDownloadContent;
@@ -720,8 +756,27 @@ export default {
           data.btTracker = reduceTrackerString(convertLineToComma(btTracker));
         }
 
-        if (rpcListenPort === EMPTY_STRING) {
-          data.rpcListenPort = this.rpcDefaultPort;
+        // 三个监听端口都过一遍：空值/越界/非数字会让 Rust 侧的 u16 反序列化失败，
+        // 那种情况下整份 system.json 会回落默认值（见 @shared/utils 的 normalizePort）
+        if ('rpcListenPort' in data) {
+          data.rpcListenPort = normalizePort(
+            data.rpcListenPort,
+            this.formOriginal.rpcListenPort || this.rpcDefaultPort
+          );
+        }
+
+        if ('listenPort' in data) {
+          data.listenPort = normalizePort(
+            data.listenPort,
+            this.formOriginal.listenPort || ENGINE_BT_PORT
+          );
+        }
+
+        if ('dhtListenPort' in data) {
+          data.dhtListenPort = normalizePort(
+            data.dhtListenPort,
+            this.formOriginal.dhtListenPort || ENGINE_DHT_PORT
+          );
         }
 
         console.log('[Motr] preference changed data:', data);
@@ -732,6 +787,26 @@ export default {
             this.$store.dispatch('app/fetchEngineOptions');
             this.syncFormConfig();
             this.$msg.success(this.$t('preferences.save-success-message'));
+
+            // UPnP 由 Rust 侧改路由器上的端口映射（见 src-tauri/src/upnp.rs）。
+            // 只有开关本身要即时通知：它不在 needRestartKeys 里；
+            // 两个监听端口的改动会触发重启（下面 restartApp），新进程启动时
+            // upnp::apply 自然按新端口映射，这里再调一次只会白跑一趟。
+            // 放在 .then 里是要等配置先落盘
+            if ('enableUpnp' in data) {
+              invoke('apply_upnp').catch((err) => {
+                console.warn('[Motr] apply upnp fail:', err);
+              });
+            }
+
+            // 下载协议同理：Rust 侧把 Motr 注册成 magnet: / thunder: 的
+            // 默认客户端，或取消注册（见 src-tauri/src/protocol.rs）。
+            // 这个开关不在 needRestartKeys 里，所以要即时通知
+            if ('protocols' in data) {
+              invoke('apply_protocols').catch((err) => {
+                console.warn('[Motr] apply protocols fail:', err);
+              });
+            }
           })
           .catch(() => {
             this.$msg.success(this.$t('preferences.save-fail-message'));
@@ -745,7 +820,7 @@ export default {
           //（见 src-tauri/src/window.rs），保存后立即生效
 
           if (checkIsNeedRestart(data)) {
-            this.$electron.ipcRenderer.send('command', 'application:relaunch');
+            restartApp();
           }
         }
       });

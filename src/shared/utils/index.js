@@ -665,6 +665,19 @@ export const checkIsNeedRun = (enable, lastTime, interval) => {
   return Date.now() - lastTime > interval;
 };
 
+/**
+ * 端口归一化：只接受 1..65535 的整数，其余（空值、非数字、越界）返回 `fallback`。
+ *
+ * Rust 侧的 SystemConfig 里这几个端口都是 u16，一个空串或 70000 会让
+ * `UserConfig/SystemConfig::from_store` 反序列化失败、整份配置回落默认值，
+ * 所以设置页在入口处挡住（见 Advanced.vue 的端口输入框与保存逻辑）。
+ */
+export const normalizePort = (value, fallback) => {
+  const port = Number.parseInt(value, 10);
+
+  return Number.isInteger(port) && port > 0 && port <= 65535 ? port : fallback;
+};
+
 export const generateRandomInt = (min = 0, max = 10000) => {
   let result = min;
   const range = max - min;

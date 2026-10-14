@@ -7,7 +7,7 @@ import { mapState } from 'vuex';
 import { getCurrentWindow, ProgressBarStatus } from '@tauri-apps/api/window';
 import is from '@/utils/is';
 import api from '@/api';
-import { getTaskFullPath, showItemInFolder } from '@/utils/native';
+import { showNotification } from '@/utils/native';
 import { bytesToSize, checkTaskIsBT, getTaskName } from '@shared/utils';
 
 // app store 里的 progress 直接喂给窗口 API，数值语义与原 Electron 版一致：
@@ -41,7 +41,6 @@ export default {
       downloadSpeed: (state) => state.stat.downloadSpeed,
       speed: (state) => state.stat.uploadSpeed + state.stat.downloadSpeed,
       interval: (state) => state.interval,
-      downloading: (state) => state.stat.numActive > 0,
       progress: (state) => state.progress,
     }),
     ...mapState('task', {
@@ -55,6 +54,8 @@ export default {
     ...mapState('preference', {
       taskNotification: (state) => state.config.taskNotification,
       showProgressBar: (state) => state.config.showProgressBar,
+      resumeAllWhenAppLaunched: (state) =>
+        state.config.resumeAllWhenAppLaunched,
     }),
     currentTaskIsBT() {
       return checkTaskIsBT(this.currentTaskItem);
@@ -77,11 +78,6 @@ export default {
         .catch((err) => {
           console.warn('[Motr] update dock speed fail:', err);
         });
-    },
-    downloading(val, oldVal) {
-      if (val !== oldVal && this.isRenderer) {
-        this.$electron.ipcRenderer.send('event', 'download-status-change', val);
-      }
     },
     progress(val) {
       // 进度条：原版由主进程按 show-progress-bar 决定是否响应，这里在唯一的出口判断
@@ -198,13 +194,12 @@ export default {
     handleDownloadComplete(task, isBT) {
       this.$store.dispatch('task/saveSession');
 
-      const path = getTaskFullPath(task);
-      this.showTaskCompleteNotify(task, isBT, path);
+      this.showTaskCompleteNotify(task, isBT);
 
       // 原 Electron 版这里会把 task-download-complete 发给主进程（做 addRecentDocument
       // 和 Dock 动画），这两件事暂时都没做
     },
-    showTaskCompleteNotify(task, isBT, path) {
+    showTaskCompleteNotify(task, isBT) {
       const taskName = getTaskName(task);
       const message = isBT
         ? this.$t('task.bt-download-complete-message', { taskName })
@@ -221,15 +216,10 @@ export default {
         ? this.$t('task.bt-download-complete-notify')
         : this.$t('task.download-complete-notify');
 
-      /* eslint-disable no-new */
-      const notify = new Notification(notifyMessage, {
+      showNotification({
+        title: notifyMessage,
         body: `${taskName}${tips}`,
       });
-      notify.onclick = () => {
-        showItemInFolder(path, {
-          errorMsg: this.$t('task.file-not-exist'),
-        });
-      };
     },
     showTaskErrorNotify(task) {
       const taskName = getTaskName(task);
@@ -241,8 +231,8 @@ export default {
         return;
       }
 
-      /* eslint-disable no-new */
-      new Notification(this.$t('task.download-fail-notify'), {
+      showNotification({
+        title: this.$t('task.download-fail-notify'),
         body: taskName,
       });
     },
@@ -296,6 +286,16 @@ export default {
     setTimeout(() => {
       this.$store.dispatch('app/fetchEngineInfo');
       this.$store.dispatch('app/fetchEngineOptions');
+
+      // 「启动时自动开始未完成的任务」：等价原项目 Application.autoResumeTask()
+      //（它在 application:initialized 里调 engineClient.call('unpauseAll')）。
+      // 放在引擎信息/选项拉完之后，是因为我们的 aria2 RPC 客户端在前端
+      //（api.client 在 Api.init 里异步建好），要等它连上才能发 unpauseAll。
+      // 只在启动时做一次，之后改这个开关是下次启动生效。
+      if (this.resumeAllWhenAppLaunched) {
+        console.info('[Motr] auto resume unfinished tasks');
+        this.$store.dispatch('task/resumeAllTask');
+      }
 
       this.startPolling();
     }, 100);

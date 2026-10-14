@@ -241,7 +241,9 @@ const actions = {
     return api.removeTaskRecord({ gid }).finally(() => dispatch('fetchList'));
   },
   saveSession() {
-    api.saveSession();
+    // 返回 promise：重启前要等 aria2 真的把会话写到 download.session（见
+    // src/utils/native.js 的 restartApp，等价原项目 relaunch 前的 stopAllSettled）
+    return api.saveSession();
   },
   purgeTaskRecord({ dispatch }) {
     return api.purgeTaskRecord().finally(() => dispatch('fetchList'));

@@ -2,14 +2,84 @@ use tauri::{AppHandle, Manager};
 use tauri_plugin_os::{arch, platform};
 use tauri_plugin_store::StoreExt;
 
-use crate::config_manager::{Config, SystemConfig, UserConfig};
+use crate::config_manager::{self, Config, SystemConfig, UserConfig};
 use crate::context::{Context, get_aria2_conf_path, get_session_path};
-use crate::{auto_launch, menu, run_mode, tray};
+use crate::{auto_launch, engine, menu, protocol, run_mode, tray, upnp};
+
+/// 设置页点「恢复初始设置」时调用：停引擎 → 清空两份配置 → 重启应用。
+///
+/// 对齐上游 `application:factory-reset`（`offConfigListeners()` +
+/// `configManager.reset()` + `relaunch()`）：`offConfigListeners` 那步在这个移植版
+/// 没有对应物 —— 配置监听要么在前端，要么是每次现读（如 `apply_run_mode`）
+#[tauri::command]
+pub fn factory_reset(app: AppHandle) -> Result<(), String> {
+    // 必须先停引擎：`app.restart()` 内部只做 `cleanup_before_exit()`，不会发
+    // `RunEvent::Exit`，shell 插件的收子进程逻辑因此不会跑
+    engine::stop(&app);
+
+    config_manager::reset_stores(&app)?;
+
+    restart_after_response(app);
+
+    Ok(())
+}
+
+/// 重启应用（前端 `utils/native.js` 的 `restartApp`、「更新下载完重启」也用它）。
+///
+/// 同样的理由要先停引擎：直接 `app.restart()` 会留下一个占着 RPC 端口的孤儿
+/// aria2（新进程的引擎起不来，界面却还连着旧的 —— 上一轮那个"重置无效"就是这么来的）
+#[tauri::command]
+pub fn relaunch(app: AppHandle) -> Result<(), String> {
+    engine::stop(&app);
+
+    restart_after_response(app);
+
+    Ok(())
+}
+
+/// 让这次 invoke 的响应先回到前端，再重启应用
+///（`app.restart()` 不返回，同步调用的话前端拿不到响应）
+fn restart_after_response(app: AppHandle) {
+    tauri::async_runtime::spawn(async move {
+        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+        app.restart();
+    });
+}
+
+/// 设置页点「重置下载会话记录」时调用：停引擎、删掉 download.session、重新起引擎
+///（流程与原项目 `Application.resetSession()` 一致，见 engine.rs）
+#[tauri::command]
+pub fn reset_session(app: AppHandle) -> Result<(), String> {
+    engine::reset_session(&app);
+    Ok(())
+}
+
+/// 设置页保存后调用：让系统里的默认客户端与 user.json 的 protocols 对齐
+#[tauri::command]
+pub fn apply_protocols(app: AppHandle) -> Result<(), String> {
+    protocol::apply(&app);
+    Ok(())
+}
+
+/// 前端挂上 `command` 监听后调用：补发冷启动时攒下的协议链接（见 protocol.rs）
+#[tauri::command]
+pub fn protocol_ready(app: AppHandle) -> Result<(), String> {
+    protocol::ready(&app);
+    Ok(())
+}
 
 /// 设置页保存后调用：让系统登录项与 user.json 里的 open-at-login 对齐
 #[tauri::command]
 pub fn apply_auto_launch(app: AppHandle) -> Result<(), String> {
     auto_launch::apply(&app);
+    Ok(())
+}
+
+/// 设置页保存后调用：让路由器上的 UPnP 端口映射与
+/// user.json 的 enable-upnp、system.json 的两个监听端口对齐（见 upnp.rs）
+#[tauri::command]
+pub fn apply_upnp(app: AppHandle) -> Result<(), String> {
+    upnp::apply(&app);
     Ok(())
 }
 

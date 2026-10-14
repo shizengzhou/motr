@@ -71,7 +71,11 @@ mod tests {
     #[test]
     fn falls_back_to_default_for_unknown_level() {
         assert_eq!(level_filter(""), DEFAULT_LEVEL);
-        assert_eq!(level_filter("Verbose"), DEFAULT_LEVEL, "大小写不匹配也算未知");
+        assert_eq!(
+            level_filter("Verbose"),
+            DEFAULT_LEVEL,
+            "大小写不匹配也算未知"
+        );
         assert_eq!(level_filter("verbose"), DEFAULT_LEVEL);
         assert_eq!(level_filter("silly"), DEFAULT_LEVEL);
         // trace 是 Rust 的等级名，但不在前端的下拉框里
@@ -85,12 +89,7 @@ mod tests {
         let filters = LEVEL_NAMES.map(level_filter);
 
         for pair in filters.windows(2) {
-            assert!(
-                pair[1] >= pair[0],
-                "{} 应该比 {} 更啰嗦",
-                pair[1],
-                pair[0]
-            );
+            assert!(pair[1] >= pair[0], "{} 应该比 {} 更啰嗦", pair[1], pair[0]);
         }
 
         // 最安静的一级只留 error，最啰嗦的一级是 debug

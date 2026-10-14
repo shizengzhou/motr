@@ -16,7 +16,17 @@ import Icon from '@/components/Icons/Icon.vue';
 import Msg from '@/components/Msg';
 import { commands } from '@/components/CommandManager/instance';
 import TrayWorker from '@/workers/tray.worker?worker';
-import { APP_RUN_MODE } from '@shared/constants';
+import { checkForUpdates } from '@/utils/updater';
+import {
+  APP_RUN_MODE,
+  AUTO_CHECK_UPDATE_INTERVAL,
+  AUTO_SYNC_TRACKER_INTERVAL,
+} from '@shared/constants';
+import { checkIsNeedRun } from '@shared/utils';
+import {
+  convertTrackerDataToComma,
+  reduceTrackerString,
+} from '@shared/utils/tracker';
 
 import '@/components/Theme/Index.scss';
 
@@ -132,6 +142,28 @@ function init(config) {
   }, 400);
 }
 
+// 「自动同步 Tracker」：等价原项目 Application.syncTrackers ——
+// 抓各源 → 合并成逗号串 → 精简长度 → 存进 bt-tracker。
+// bt-tracker 是 systemKey，保存时会经 changeGlobalOption 一起下发给运行中的 aria2
+const syncBtTrackers = (source) => {
+  // 走 store action，这样「更新 Tracker」的代理设置才会一起生效
+  store
+    .dispatch('preference/fetchBtTracker', source)
+    .then((data) => {
+      if (!data || data.length === 0) {
+        return;
+      }
+
+      store.dispatch('preference/save', {
+        btTracker: reduceTrackerString(convertTrackerDataToComma(data)),
+        lastSyncTrackerTime: Date.now(),
+      });
+    })
+    .catch((err) => {
+      console.warn('[Motr] auto sync tracker failed:', err);
+    });
+};
+
 Promise.all([
   store.dispatch('preference/fetchPreference'),
   // 读一次系统主题 + 订阅后续变化（theme=auto 时跟随系统）
@@ -140,6 +172,31 @@ Promise.all([
   .then(([config]) => {
     console.info('[Motr] load preference:', config);
     init(config);
+
+    // 「自动检查更新」：等价原项目 Application.initUpdaterManager 里那句
+    // checkIsNeedRun(auto-check-update, last-check-update-time, AUTO_CHECK_UPDATE_INTERVAL)。
+    // 自动检查不带 userCheck，所以「已是最新」不弹框，只有真有更新才问。
+    if (
+      checkIsNeedRun(
+        config.autoCheckUpdate,
+        config.lastCheckUpdateTime,
+        AUTO_CHECK_UPDATE_INTERVAL
+      )
+    ) {
+      checkForUpdates();
+    }
+
+    // 「自动同步 Tracker」：等价原项目 Application.autoSyncTrackers（间隔 12 小时）。
+    // 原项目先等 500ms，让启动期的其它请求先过去，这里保持一致
+    if (
+      checkIsNeedRun(
+        config.autoSyncTracker,
+        config.lastSyncTrackerTime,
+        AUTO_SYNC_TRACKER_INTERVAL
+      )
+    ) {
+      setTimeout(() => syncBtTrackers(config.trackerSource), 500);
+    }
   })
   .catch((err) => {
     alert(err);

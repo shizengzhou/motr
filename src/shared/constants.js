@@ -37,6 +37,9 @@ export const MAX_NUM_OF_DIRECTORIES = 5;
 
 export const ENGINE_RPC_HOST = '127.0.0.1';
 export const ENGINE_RPC_PORT = 16800;
+// 与 src-tauri/src/config_manager.rs 里 SystemConfig 的默认值保持一致
+export const ENGINE_BT_PORT = 21301;
+export const ENGINE_DHT_PORT = 26701;
 export const ENGINE_MAX_CONCURRENT_DOWNLOADS = 10;
 export const ENGINE_MAX_CONNECTION_PER_SERVER = 64;
 

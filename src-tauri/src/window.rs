@@ -28,7 +28,9 @@ pub fn mark_quitting() {
     WILL_QUIT.store(true, Ordering::SeqCst);
 }
 
-fn is_quitting() -> bool {
+/// 是否已经在退出流程里。除了窗口关闭处理，重置会话那边也用它 ——
+/// 退出途中别再把手动停掉的引擎拉起来，否则会留一个孤儿 aria2
+pub(crate) fn is_quitting() -> bool {
     WILL_QUIT.load(Ordering::SeqCst)
 }
 

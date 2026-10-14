@@ -376,7 +376,9 @@ fn torrent_payload(path: &Path) -> Result<Value, String> {
 }
 
 /// 把命令下发给前端：前端 `Ipc.vue` 收到后交给 CommandManager 执行
-fn send_command_to_frontend(app: &AppHandle, command: &str, arg: Option<&Value>) {
+///
+/// 菜单点击之外，协议链接（protocol.rs）也走这里 —— 前端只需要认一种形状
+pub(crate) fn send_command_to_frontend(app: &AppHandle, command: &str, arg: Option<&Value>) {
     // 前端是 commands.execute(command, ...args)，所以参数要包成数组
     let args = arg.map_or_else(|| json!([]), |value| json!([value]));
     let payload = json!({ "command": command, "args": args });

@@ -1,69 +1,45 @@
 import { isEmpty } from 'lodash';
-import axios from 'axios';
-import {
-  MAX_BT_TRACKER_LENGTH,
-  ONE_SECOND,
-  PROXY_SCOPES,
-} from '@shared/constants';
+import { fetch } from '@tauri-apps/plugin-http';
+import { MAX_BT_TRACKER_LENGTH, ONE_SECOND } from '@shared/constants';
 
-export const convertToAxiosProxy = (proxyServer = '') => {
-  if (!proxyServer) {
-    return;
-  }
-
-  const url = new URL(proxyServer);
-  const { username, password, protocol = 'http:', hostname, port } = url;
-
-  let result = {
-    protocol: protocol.replace(':', ''),
-    host: hostname,
-    port,
-  };
-
-  const auth =
-    username || password
-      ? {
-          username,
-          password,
-        }
-      : undefined;
-
-  if (auth) {
-    result = {
-      ...result,
-      auth,
-    };
-  }
-
-  return result;
-};
-
-export const fetchBtTrackerFromSource = async (source, proxyConfig = {}) => {
+/**
+ * 从 tracker 源抓列表，返回各源的原始文本（去重、跳过失败的源）。
+ *
+ * 请求走 @tauri-apps/plugin-http：它在 Rust 侧用 reqwest 发出去，既不受 webview 的
+ * CORS 限制，也能按请求指定代理。原 Electron 版用 axios 在渲染进程直接请求，
+ * 代理交给 axios 的 `config.proxy` —— 那套只对 Node 生效。
+ *
+ * @param {string[]} source tracker 源 URL
+ * @param {string|undefined} proxyUrl 这条请求要走的代理；undefined 表示交给系统代理
+ */
+export const fetchBtTrackerFromSource = async (source, proxyUrl) => {
   if (isEmpty(source)) {
     return [];
   }
 
   const now = Date.now();
-  const { enable, server, scope = [] } = proxyConfig;
-  const proxy =
-    enable && server && scope.includes(PROXY_SCOPES.UPDATE_TRACKERS)
-      ? convertToAxiosProxy(server)
-      : undefined;
+  const options = {
+    connectTimeout: 30 * ONE_SECOND,
+    ...(proxyUrl ? { proxy: { all: proxyUrl } } : {}),
+  };
 
-  // Axios's config.proxy is Node.js only
   const promises = source.map(async (url) => {
-    return axios
-      .get(`${url}?t=${now}`, {
-        timeout: 30 * ONE_SECOND,
-        proxy,
-      })
-      .then((value) => value.data);
+    const response = await fetch(`${url}?t=${now}`, options);
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    return response.text();
   });
 
   const results = await Promise.allSettled(promises);
-  const values = results.map((item) => item.value);
-  const result = [...new Set(values)];
-  return result;
+  const values = results
+    .filter((item) => item.status === 'fulfilled')
+    .map((item) => item.value)
+    .filter((value) => value);
+
+  return [...new Set(values)];
 };
 
 export const convertTrackerDataToLine = (arr = []) => {

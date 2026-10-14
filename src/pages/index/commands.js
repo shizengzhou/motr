@@ -12,6 +12,7 @@ import {
   buildUriPayload,
   buildTorrentPayload,
 } from '@/utils/task';
+import { checkForUpdates } from '@/utils/updater';
 
 const i18n = getLocaleManager().getI18n();
 
@@ -175,6 +176,13 @@ const fetchPreference = () => {
 commands.register('application:task-list', navigateTaskList);
 commands.register('application:preferences', navigatePreferences);
 commands.register('application:about', showAboutPanel);
+
+// 应用菜单 + 托盘菜单里的「检查更新」（menus/*.json 里 command 就是这个）
+const checkUpdate = () => {
+  checkForUpdates({ userCheck: true });
+};
+
+commands.register('application:check-for-updates', checkUpdate);
 
 commands.register('application:new-task', addTask);
 commands.register('application:new-bt-task', showAddBtTask);

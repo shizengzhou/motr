@@ -290,8 +290,8 @@ impl Default for Proxy {
             bypass: "".to_string(),
             scope: vec![
                 ProxyScope::Download.as_str().to_string(),
-                ProxyScope::UploadApp.as_str().to_string(),
-                ProxyScope::UploadTracker.as_str().to_string(),
+                ProxyScope::UpdateApp.as_str().to_string(),
+                ProxyScope::UpdateTrackers.as_str().to_string(),
             ],
         }
     }
@@ -300,16 +300,16 @@ impl Default for Proxy {
 #[derive(Debug, Serialize)]
 pub enum ProxyScope {
     Download,
-    UploadApp,
-    UploadTracker,
+    UpdateApp,
+    UpdateTrackers,
 }
 
 impl ProxyScope {
-    fn as_str(&self) -> &str {
+    pub fn as_str(&self) -> &str {
         match self {
             ProxyScope::Download => "download",
-            ProxyScope::UploadApp => "upload-app",
-            ProxyScope::UploadTracker => "upload-tracker",
+            ProxyScope::UpdateApp => "update-app",
+            ProxyScope::UpdateTrackers => "update-trackers",
         }
     }
 }
@@ -352,6 +352,63 @@ impl AppTheme {
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(default)]
 pub struct WindowState {}
+
+/// 「恢复初始设置」：清空 user.json 与 system.json。
+///
+/// 对应上游 `ConfigManager.reset()` 里的 `userConfig.clear()` + `systemConfig.clear()`：
+/// 读配置的两个 `from_store` 都带 serde default，键没了就回落默认值，所以"空文件 == 初始设置"。
+///
+/// 用 store 的 API 清空而不是直接删文件：插件缓存里还留着旧值，而且它在
+/// `RunEvent::Exit` 时会把缓存写盘（见 tauri-plugin-store 的 `on_event`），
+/// 直接删文件会被它写回来
+pub fn reset_stores<R: Runtime>(app_handle: &AppHandle<R>) -> Result<(), String> {
+    for path in ["user.json", "system.json"] {
+        let store = app_handle.store(path).map_err(|err| err.to_string())?;
+
+        store.clear();
+        store.save().map_err(|err| err.to_string())?;
+
+        log::info!("[Motr] 已清空 {path}（恢复初始设置）");
+    }
+
+    Ok(())
+}
+
+/// 「下载协议」的两个开关（magnet / thunder）：读 user.json，缺键或读不到时按默认值
+///（magnet 开、thunder 关，与原项目一致）
+///
+/// 开关能在运行中改（见 protocol.rs），所以这里是现读现用。
+pub fn protocols<R: Runtime>(app_handle: &AppHandle<R>) -> Protocols {
+    app_handle
+        .store("user.json")
+        .ok()
+        .and_then(|store| UserConfig::from_store(&store).ok())
+        .map(|config| config.protocols)
+        .unwrap_or_default()
+}
+
+/// 「启用 UPnP」是否开启：读 user.json，缺键或读不到时按默认值（true，与原项目一致）
+///
+/// 开关能在运行中改（见 upnp.rs），所以这里是现读现用，不是只在启动时读一次。
+pub fn enable_upnp<R: Runtime>(app_handle: &AppHandle<R>) -> bool {
+    app_handle
+        .store("user.json")
+        .ok()
+        .and_then(|store| UserConfig::from_store(&store).ok())
+        .map(|config| config.enable_upnp)
+        .unwrap_or(true)
+}
+
+/// 需要映射到路由器的两个监听端口（BT / DHT）：读 system.json，缺键或读不到时按默认值
+pub fn listen_ports<R: Runtime>(app_handle: &AppHandle<R>) -> (u16, u16) {
+    let system_config = app_handle
+        .store("system.json")
+        .ok()
+        .and_then(|store| SystemConfig::from_store(&store).ok())
+        .unwrap_or_default();
+
+    (system_config.listen_port, system_config.dht_listen_port)
+}
 
 /// 设置页里的日志等级：读 user.json，缺键或读不到时按默认值（warn）
 ///
@@ -429,12 +486,42 @@ pub fn is_windows_or_linux() -> bool {
 mod tests {
     use super::*;
 
+    /// 「恢复初始设置」把两份配置清空后，读出来必须全是默认值。
+    ///
+    /// `from_store` 内部就是 `serde_json::from_value`，空 map 会走各字段的
+    /// serde default —— 这就是"清空 == 初始设置"的依据（清空而不是删文件的原因
+    /// 见 `reset_stores`）
     #[test]
-    fn proxy() {
+    fn empty_stores_fall_back_to_defaults() {
+        let user: UserConfig = serde_json::from_value(serde_json::json!({})).unwrap();
+        let system: SystemConfig = serde_json::from_value(serde_json::json!({})).unwrap();
+
+        let default_user = UserConfig::default();
+        let default_system = SystemConfig::default();
+
+        assert_eq!(user.log_level, default_user.log_level);
+        assert_eq!(user.run_mode, default_user.run_mode);
+        assert_eq!(user.locale, default_user.locale);
+        assert_eq!(user.protocols.magnet, default_user.protocols.magnet);
+        assert_eq!(user.protocols.thunder, default_user.protocols.thunder);
+        assert_eq!(user.enable_upnp, default_user.enable_upnp);
+        assert_eq!(user.keep_window_state, default_user.keep_window_state);
+
+        assert_eq!(system.rpc_listen_port, default_system.rpc_listen_port);
+        assert_eq!(system.listen_port, default_system.listen_port);
+        assert_eq!(system.dht_listen_port, default_system.dht_listen_port);
+        assert_eq!(system.user_agent, default_system.user_agent);
+        assert_eq!(system.dir, default_system.dir);
+    }
+
+    /// 默认 scope 的三个值必须和前端 `PROXY_SCOPES`（@shared/constants.js）一致，
+    /// 否则设置页那个多选框会显示成"一个都没选中"
+    #[test]
+    fn proxy_default_scope_matches_frontend() {
         let proxy = Proxy::default();
         assert_eq!(
             proxy.scope,
-            vec!["download", "upload-app", "upload-tracker"]
+            vec!["download", "update-app", "update-trackers"]
         );
     }
 

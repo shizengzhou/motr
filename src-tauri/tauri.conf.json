@@ -42,6 +42,20 @@
       "debugApplicationIdSuffix": ".debug"
     },
     "externalBin": ["binaries/aria2c"],
-    "resources": ["resources/**/*"]
+    "resources": ["resources/**/*"],
+    "createUpdaterArtifacts": true
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://github.com/shizengzhou/motr/releases/latest/download/latest.json"
+      ],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDg3Nzg3MjQzMzYwNTFENDIKUldSQ0hRVTJRM0o0aDk1YjNHdVR6Z0JwdWtmZzVkUnRFQ05lYWUvdEk4bnMxZEQ1RU55REs1Z04K"
+    },
+    "deep-link": {
+      "desktop": {
+        "schemes": ["magnet", "thunder", "mo", "motrix"]
+      }
+    }
   }
 }

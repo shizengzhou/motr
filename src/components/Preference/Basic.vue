@@ -319,6 +319,7 @@ import {
   ENGINE_RPC_PORT,
 } from '@shared/constants';
 import { reduceTrackerString } from '@shared/utils/tracker';
+import { restartApp } from '@/utils/native';
 
 const initForm = (config) => {
   const {
@@ -630,7 +631,7 @@ export default {
           //（见 src-tauri/src/window.rs），保存后立即生效
 
           if (checkIsNeedRestart(data)) {
-            this.$electron.ipcRenderer.send('command', 'application:relaunch');
+            restartApp();
           }
         }
       });
