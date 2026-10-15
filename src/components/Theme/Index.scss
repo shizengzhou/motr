@@ -13,3 +13,7 @@
 /* Theme Dark
 -------------------------- */
 @import './Dark.scss';
+
+html {
+  overscroll-behavior: none;
+}
