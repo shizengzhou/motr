@@ -1,5 +1,8 @@
 // import { access, constants } from 'node:fs';
-import { resolve } from 'path-browserify';
+// 注意用 join 而不是 resolve：path-browserify 的 resolve 在参数不是 POSIX 绝对路径
+// （/ 开头）时会走 process.cwd()，Windows 路径（C:\...）必然触发，webview 里没有
+// process，直接抛 "process is not defined"——删除任务文件就是这样失败的
+import { join } from 'path-browserify';
 import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import {
@@ -20,7 +23,7 @@ export const showItemInFolder = (fullPath, { errorMsg }) => {
     return;
   }
 
-  fullPath = resolve(fullPath);
+  fullPath = join(fullPath);
   try {
     revealItemInDir(fullPath);
   } catch (err) {
@@ -92,7 +95,7 @@ export const showNotification = async ({ title, body }) => {
 
 export const getTaskFullPath = (task) => {
   const { dir, files, bittorrent } = task;
-  let result = resolve(dir);
+  let result = join(dir);
 
   // Magnet link task
   if (isMagnetTask(task)) {
@@ -100,12 +103,12 @@ export const getTaskFullPath = (task) => {
   }
 
   if (bittorrent && bittorrent.info && bittorrent.info.name) {
-    result = resolve(result, bittorrent.info.name);
+    result = join(result, bittorrent.info.name);
     return result;
   }
 
   const [file] = files;
-  const path = file.path ? resolve(file.path) : '';
+  const path = file.path ? join(file.path) : '';
   let fileName = '';
 
   if (path) {
@@ -114,7 +117,7 @@ export const getTaskFullPath = (task) => {
     if (files && files.length === 1) {
       fileName = getFileNameFromFile(file);
       if (fileName) {
-        result = resolve(result, fileName);
+        result = join(result, fileName);
       }
     }
   }
