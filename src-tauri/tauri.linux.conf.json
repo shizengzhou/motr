@@ -1,0 +1,5 @@
+{
+  "bundle": {
+    "resources": ["resources/**/*", "linux/aria2.conf"]
+  }
+}

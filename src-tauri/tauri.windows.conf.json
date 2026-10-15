@@ -14,5 +14,8 @@
         "decorations": false
       }
     ]
+  },
+  "bundle": {
+    "resources": ["resources/**/*", "windows/aria2.conf"]
   }
 }

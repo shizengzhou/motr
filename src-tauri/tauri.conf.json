@@ -20,6 +20,7 @@
         "resizable": true,
         "fullscreen": false,
         "titleBarStyle": "Overlay",
+        "hiddenTitle": true,
         "dragDropEnabled": false,
         "visible": false
       }
@@ -45,7 +46,7 @@
         "name": "BitTorrent",
         "description": "BitTorrent File",
         "mimeType": "application/x-bittorrent",
-        "role": "Editor"
+        "role": "Viewer"
       }
     ],
     "android": {
