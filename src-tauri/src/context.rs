@@ -1,3 +1,4 @@
+use dunce::simplified;
 use serde::Serialize;
 use tauri::{AppHandle, Manager, path::BaseDirectory::Resource};
 use tauri_plugin_os::type_;
@@ -26,10 +27,14 @@ pub fn get_session_path(app_handle: &AppHandle) -> String {
 }
 
 pub fn get_aria2_conf_path(app_handle: &AppHandle) -> String {
-    app_handle
+    let path = app_handle
         .path()
         .resolve(format!("{}/aria2.conf", type_()), Resource)
-        .unwrap()
-        .to_string_lossy()
-        .to_string()
+        .unwrap();
+
+    // Windows 上 Tauri 的 current_exe() 做过 canonicalize()，resolve 出来的资源路径
+    // 会带 `\\?\` 长路径前缀。aria2c 读不了这种路径——文件明明存在也会报
+    // "Configuration file ... is not found" 然后退出，引擎起不来。
+    // dunce::simplified 去掉 `\\?\` 前缀（Unix 上原样返回）
+    simplified(&path).to_string_lossy().to_string()
 }

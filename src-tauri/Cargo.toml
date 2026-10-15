@@ -21,7 +21,7 @@ tauri-build = { version = "2.7.0", features = [] }
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 log = "0.4"
-# devtools：帮助菜单里的「切换开发者工具」在 release 构建也能用（原 Electron 版一直有）
+dunce = "1.0.5"
 tauri = { version = "2.12.0", features = [
     "tray-icon",
     "image-png",
