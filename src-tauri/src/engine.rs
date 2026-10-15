@@ -1,3 +1,5 @@
+#[cfg(not(windows))]
+use std::process::Command;
 use std::{
     collections::HashMap,
     net::{SocketAddr, TcpStream},
@@ -103,7 +105,11 @@ pub fn start(app_handle: &AppHandle, config: &Config) -> Result<(), String> {
                         Some(code) => log::error!(
                             "[Motr] 引擎异常退出（code={code}{}）：多半是 RPC 端口被占用 —— \
                              上一次遗留的 aria2 还在跑。先把它结束掉，再重启应用",
-                            if still_ours { "" } else { "，且已被别处接管" }
+                            if still_ours {
+                                ""
+                            } else {
+                                "，且已被别处接管"
+                            }
                         ),
                     }
 
@@ -363,14 +369,13 @@ fn engine_config(
     user_config: &UserConfig,
     system_config: &SystemConfig,
 ) -> HashMap<String, serde_json::Value> {
-    let mut extra_config: HashMap<String, serde_json::Value> =
-        serde_json::to_value(system_config)
-            .unwrap()
-            .as_object()
-            .cloned()
-            .unwrap()
-            .into_iter()
-            .collect();
+    let mut extra_config: HashMap<String, serde_json::Value> = serde_json::to_value(system_config)
+        .unwrap()
+        .as_object()
+        .cloned()
+        .unwrap()
+        .into_iter()
+        .collect();
 
     if user_config.keep_seeding || system_config.seed_ratio == 0.0 {
         extra_config.insert("seed-ratio".to_string(), serde_json::Value::from(0));
