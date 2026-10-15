@@ -40,10 +40,6 @@ pub(crate) fn is_quitting() -> bool {
 ///
 /// 只保留尺寸和位置 —— 原项目存的也是 `window.getBounds()` 的 x/y/width/height，
 /// 不记全屏/最大化（退出时若在最大化状态，插件存的是最大化之前的尺寸，回来就是那个尺寸）。
-///
-/// 故意不含 `VISIBLE`：恢复时绝不顺手把窗口显示出来（托盘应用模式要一直藏着，
-/// 显示与否由 lib.rs 里运行模式那段决定）。
-/// 也不含 `DECORATIONS`：装饰由 tauri.conf.json 决定（macOS 上是 Overlay 标题栏）。
 pub(crate) const STATE_FLAGS: StateFlags = StateFlags::SIZE.union(StateFlags::POSITION);
 
 /// 「恢复上次退出时的窗口大小和位置」。

@@ -37,8 +37,9 @@ export default {
     handleMinimize() {
       this.win.minimize();
     },
-    handleMaximize() {
-      if (this.win.isMaximized()) {
+    async handleMaximize() {
+      const isMaximized = await this.win.isMaximized();
+      if (isMaximized) {
         this.win.unmaximize();
       } else {
         this.win.maximize();
