@@ -7,7 +7,6 @@ import Preference from '@/components/Preference/Index.vue';
 import PreferenceSubnav from '@/components/Subnav/PreferenceSubnav.vue';
 import PreferenceBasic from '@/components/Preference/Basic.vue';
 import PreferenceAdvanced from '@/components/Preference/Advanced.vue';
-import PreferenceLab from '@/components/Preference/Lab.vue';
 
 Vue.use(Router);
 

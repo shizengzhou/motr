@@ -19,9 +19,9 @@ use tauri_plugin_dialog::{DialogExt, MessageDialogKind};
 
 use crate::engine::EngineChild;
 use commands::{
-    apply_auto_launch, apply_protocols, apply_run_mode, apply_upnp, factory_reset, get_app_config,
-    protocol_ready, rebuild_menus, relaunch, reset_session, reset_tray_icon, set_tray_speedometer,
-    trash_item,
+    apply_auto_launch, apply_hide_app_menu, apply_protocols, apply_run_mode, apply_upnp,
+    factory_reset, get_app_config, protocol_ready, rebuild_menus, relaunch, reset_session,
+    reset_tray_icon, set_tray_speedometer, trash_item,
 };
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -88,6 +88,7 @@ pub fn run() {
             reset_tray_icon,
             apply_run_mode,
             apply_auto_launch,
+            apply_hide_app_menu,
             apply_upnp,
             apply_protocols,
             protocol_ready,
@@ -105,9 +106,19 @@ pub fn run() {
             // 决定托盘是否创建、Dock 图标是否显示（见 run_mode.rs）
             let run_mode = run_mode::init(&handle);
 
+            // 小屏幕适配：主显示器工作区不够大时把默认窗口尺寸缩一档
+            //（见 window.rs 的 fit_window_to_display）。放在 restore_state 之前：
+            // 开了「恢复窗口状态」时以上次保存的 bounds 为准，与上游 Motrix 一致
+            window::fit_window_to_display(&handle);
+
             // 「恢复上次退出时的窗口大小和位置」：开了才用上次的 bounds，
             // 要在显示窗口之前恢复，免得先出现默认尺寸再跳一下（见 window.rs）
             window::restore_state(&handle);
+
+            // 「隐藏菜单栏」→ 窗口装饰（原生标题栏）由 Rust 侧按 user.json 应用。
+            // 放在窗口显示之前：配置里 visible: false，此刻改样式不会闪一下原生标题栏
+            //（见 window.rs 的 apply_hide_app_menu）
+            window::apply_hide_app_menu(&handle);
 
             // 窗口在 tauri.conf.json 里设的是 visible: false，这里决定要不要显示：
             // 托盘应用模式不显示；本次是被「开机自启」拉起时也不显示

@@ -84,6 +84,14 @@ pub fn apply_auto_launch(app: AppHandle) -> Result<(), String> {
     Ok(())
 }
 
+/// 设置页保存「隐藏菜单栏」后调用：按 user.json 的 hide-app-menu
+/// 重新应用窗口装饰（原生标题栏，见 window::apply_hide_app_menu）
+#[tauri::command]
+pub fn apply_hide_app_menu(app: AppHandle) -> Result<(), String> {
+    window::apply_hide_app_menu(&app);
+    Ok(())
+}
+
 /// 设置页保存后调用：让路由器上的 UPnP 端口映射与
 /// user.json 的 enable-upnp、system.json 的两个监听端口对齐（见 upnp.rs）
 #[tauri::command]

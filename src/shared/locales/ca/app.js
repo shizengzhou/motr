@@ -7,8 +7,7 @@ export default {
   'check-updates-now': 'Comprovar ara',
   'checking-for-updates': 'Comprovant actualitzacions...',
   'check-for-updates-title': 'Comprovar actualitzacions',
-  'update-available-message':
-    'Hi ha una nova versió de Motr. Actualitzar ara?',
+  'update-available-message': 'Hi ha una nova versió de Motr. Actualitzar ara?',
   'update-not-available-message': "Estàs en l'última versió!",
   'update-downloaded-message': 'Llest per instal·lar...',
   'update-error-message': "Error mentre s'actualitzava",

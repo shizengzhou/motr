@@ -609,6 +609,21 @@ pub fn auto_hide_window_enabled<R: Runtime>(app_handle: &AppHandle<R>) -> bool {
         .unwrap_or(false)
 }
 
+/// 「隐藏菜单栏」是否开启：读 user.json，缺键时按默认值（Win/Linux 为 true），
+/// 连存档都读不到时按平台默认值兜底
+///
+/// 与「自动隐藏窗口」的失焦现读不同，这个值控制窗口装饰（原生标题栏），
+/// 由设置页保存后前端调 `apply_hide_app_menu` 通知 Rust 重新应用
+///（见 window::apply_hide_app_menu）
+pub fn hide_app_menu_enabled<R: Runtime>(app_handle: &AppHandle<R>) -> bool {
+    app_handle
+        .store("user.json")
+        .ok()
+        .and_then(|store| UserConfig::from_store(&store).ok())
+        .map(|config| config.hide_app_menu)
+        .unwrap_or_else(is_windows_or_linux)
+}
+
 /// 「开机自动启动」是否开启：读 user.json，缺键或读不到时按默认值（false）
 pub fn open_at_login<R: Runtime>(app_handle: &AppHandle<R>) -> bool {
     app_handle

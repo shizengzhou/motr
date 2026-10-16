@@ -2,7 +2,7 @@
   "app": {
     "windows": [
       {
-        "title": "",
+        "title": "Motr",
         "width": 1024,
         "height": 768,
         "minWidth": 478,
@@ -10,8 +10,7 @@
         "resizable": true,
         "fullscreen": false,
         "dragDropEnabled": false,
-        "visible": false,
-        "decorations": false
+        "visible": false
       }
     ]
   },
