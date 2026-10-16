@@ -21,7 +21,7 @@ use crate::engine::EngineChild;
 use commands::{
     apply_auto_launch, apply_hide_app_menu, apply_protocols, apply_run_mode, apply_upnp,
     factory_reset, get_app_config, protocol_ready, rebuild_menus, relaunch, reset_session,
-    reset_tray_icon, set_tray_speedometer, trash_item,
+    reset_tray_icon, set_tray_active, set_tray_speedometer, trash_item,
 };
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -86,6 +86,7 @@ pub fn run() {
             rebuild_menus,
             set_tray_speedometer,
             reset_tray_icon,
+            set_tray_active,
             apply_run_mode,
             apply_auto_launch,
             apply_hide_app_menu,

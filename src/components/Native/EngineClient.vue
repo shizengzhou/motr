@@ -4,6 +4,7 @@
 
 <script>
 import { mapState } from 'vuex';
+import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWindow, ProgressBarStatus } from '@tauri-apps/api/window';
 import is from '@/utils/is';
 import api from '@/api';
@@ -41,6 +42,7 @@ export default {
       downloadSpeed: (state) => state.stat.downloadSpeed,
       speed: (state) => state.stat.uploadSpeed + state.stat.downloadSpeed,
       interval: (state) => state.interval,
+      downloading: (state) => state.stat.numActive > 0,
       progress: (state) => state.progress,
     }),
     ...mapState('task', {
@@ -62,6 +64,17 @@ export default {
     },
   },
   watch: {
+    downloading(val, oldVal) {
+      // 原版发 'download-status-change' 事件给主进程（Application 转给
+      // TrayManager.handleDownloadStatusChange，切换托盘 normal/active 图标）；
+      // 这里直接 invoke 对面的 set_tray_active。守卫与原版一致：
+      // watcher 本身只在值变化时触发，val !== oldVal 是原版的写法
+      if (val !== oldVal && this.isRenderer) {
+        invoke('set_tray_active', { active: val }).catch((err) => {
+          console.warn('[Motr] update tray active icon fail:', err);
+        });
+      }
+    },
     speed() {
       // Dock 上显示下载速率（对齐原 Electron 版 DockManager.handleSpeedChange：
       // 只有 macOS 显示，速率为 0 时清空 badge）

@@ -624,6 +624,19 @@ pub fn hide_app_menu_enabled<R: Runtime>(app_handle: &AppHandle<R>) -> bool {
         .unwrap_or_else(is_windows_or_linux)
 }
 
+/// 托盘主题（"auto" / "light" / "dark"）：读 user.json，缺键或读不到时按默认值（auto）
+///
+/// 只影响 Linux 的托盘图标选色（macOS 是 template 图自动反色，Windows 用彩色图标），
+/// 启动时读一次（见 tray::static_icon）
+pub fn tray_theme<R: Runtime>(app_handle: &AppHandle<R>) -> String {
+    app_handle
+        .store("user.json")
+        .ok()
+        .and_then(|store| UserConfig::from_store(&store).ok())
+        .map(|config| config.tray_theme)
+        .unwrap_or_else(|| AppTheme::Auto.as_str().to_string())
+}
+
 /// 「开机自动启动」是否开启：读 user.json，缺键或读不到时按默认值（false）
 pub fn open_at_login<R: Runtime>(app_handle: &AppHandle<R>) -> bool {
     app_handle

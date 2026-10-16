@@ -119,6 +119,12 @@ pub fn reset_tray_icon(app: AppHandle) -> Result<(), String> {
     tray::reset_icon(&app)
 }
 
+/// 「下载中」状态变化：Win/Linux 切换托盘 normal/active 图标（macOS 无视）
+#[tauri::command]
+pub fn set_tray_active(app: AppHandle, active: bool) {
+    tray::set_active(&app, active);
+}
+
 /// 设置页保存后调用：按最新的 user.json 重新应用运行模式
 #[tauri::command]
 pub fn apply_run_mode(app: AppHandle) -> Result<(), String> {
