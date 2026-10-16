@@ -614,6 +614,15 @@ export default {
               });
             }
 
+            // 「隐藏菜单栏」控制窗口装饰（原生标题栏）：勾选=无边框，取消=恢复原生标题栏。
+            // 由 Rust 侧读 user.json 后 setDecorations（见 src-tauri/src/window.rs 的
+            // apply_hide_app_menu）；前端自定义标题栏上的窗口按钮走 Vue 响应式，自己会更新
+            if ('hideAppMenu' in data) {
+              invoke('apply_hide_app_menu').catch((err) => {
+                console.warn('[Motr] apply hide app menu fail:', err);
+              });
+            }
+
             this.$store.dispatch('app/fetchEngineOptions');
             this.syncFormConfig();
             this.$msg.success(this.$t('preferences.save-success-message'));
