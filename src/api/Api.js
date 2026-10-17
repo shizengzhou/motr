@@ -1,7 +1,6 @@
 import { isEmpty, clone } from 'lodash';
 import { invoke } from '@tauri-apps/api/core';
 import { emit } from '@tauri-apps/api/event';
-import { LazyStore } from '@tauri-apps/plugin-store';
 import is from '@/utils/is';
 import { aria2ProxyOptions } from '@/utils/proxy';
 import { Aria2 } from '@shared/aria2';
@@ -100,16 +99,13 @@ export default class Api {
     }
 
     const { user, system, others } = separateConfig(params);
-    const config = {};
 
     if (!isEmpty(user)) {
       console.info('[Motr] save user config: ', user);
-      config.user = user;
     }
 
     if (!isEmpty(system)) {
       console.info('[Motr] save system config: ', system);
-      config.system = system;
       this.updateActiveTaskOption(system);
     }
 
@@ -117,26 +113,21 @@ export default class Api {
       console.info('[Motr] save config found illegal key: ', others);
     }
 
-    const systemStore = new LazyStore('system.json');
-    await Promise.all(
-      Object.entries(system).map(([key, value]) => systemStore.set(key, value))
-    );
-    await systemStore.save();
-    emit('command', {
-      command: 'application:update-preference-config',
-      args: ['system'],
-    });
-    this.changeGlobalOption(system);
+    // 落盘统一交给 Rust（它是 user.json / system.json 的唯一写入者）：
+    // 前端直接用 LazyStore 写文件的话，Rust 侧的 store 缓存会变旧 —— 读不到新值，
+    // 而且退出时 tauri-plugin-store 会把旧缓存写回文件（"改完设置要重启才生效"
+    // 和 "last-check-update-time 推不动" 都是这么来的，见 config_manager::write_keys）
+    await invoke('save_config', { user, system });
 
-    const userStore = new LazyStore('user.json');
-    await Promise.all(
-      Object.entries(user).map(([key, value]) => userStore.set(key, value))
-    );
-    await userStore.save();
-    emit('command', {
-      command: 'application:update-preference-config',
-      args: ['user'],
-    });
+    if (!isEmpty(system)) {
+      this.changeGlobalOption(system);
+    }
+
+    if (!isEmpty(system) || !isEmpty(user)) {
+      emit('command', {
+        command: 'application:update-preference-config',
+      });
+    }
   }
 
   getVersion() {

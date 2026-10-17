@@ -5,6 +5,28 @@ use crate::config_manager::{self, Config};
 use crate::context::{Context, get_aria2_conf_path, get_session_path};
 use crate::{auto_launch, engine, menu, protocol, run_mode, tray, upnp, window};
 
+/// 设置页保存：把「用户配置」「系统配置」写进 user.json / system.json。
+///
+/// 前端传进来的是已经分好类、kebab-case 的两份键值（`Api.js` 的 `separateConfig`）。
+/// 为什么不让前端直接写文件：见 `config_manager::write_keys` 的说明 —— 前端与 Rust
+/// 各有一份 store 缓存，前端直写会让 Rust 的缓存变旧（读不到新值、退出时被覆盖回去）。
+#[tauri::command]
+pub fn save_config(
+    app: AppHandle,
+    user: Option<serde_json::Map<String, serde_json::Value>>,
+    system: Option<serde_json::Map<String, serde_json::Value>>,
+) -> Result<(), String> {
+    if let Some(user) = user {
+        config_manager::write_keys(&app, "user.json", &user)?;
+    }
+
+    if let Some(system) = system {
+        config_manager::write_keys(&app, "system.json", &system)?;
+    }
+
+    Ok(())
+}
+
 /// 设置页点「恢复初始设置」时调用：停引擎 → 清空两份配置 → 重启应用。
 ///
 /// 对齐上游 `application:factory-reset`（`offConfigListeners()` +

@@ -21,7 +21,7 @@ use crate::engine::EngineChild;
 use commands::{
     apply_auto_launch, apply_hide_app_menu, apply_protocols, apply_run_mode, apply_upnp,
     factory_reset, get_app_config, protocol_ready, rebuild_menus, relaunch, reset_session,
-    reset_tray_icon, set_tray_active, set_tray_speedometer, trash_item,
+    reset_tray_icon, save_config, set_tray_active, set_tray_speedometer, trash_item,
 };
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -83,6 +83,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             trash_item,
             get_app_config,
+            save_config,
             rebuild_menus,
             set_tray_speedometer,
             reset_tray_icon,
@@ -217,11 +218,6 @@ pub fn run() {
             // 进入退出流程：之后的关闭请求要放行（原项目 before-quit 里的 willQuit）
             RunEvent::ExitRequested { .. } => {
                 window::mark_quitting();
-
-                // 这里先于 `Exit` 触发，正好赶在 store 插件把**缓存**写盘之前刷新它，
-                // 否则前端（JS LazyStore）本次会话写的内容会被启动时的旧缓存覆盖
-                //（典型表现：last-check-update-time 推不动 ⇒ 每次启动都检查更新）
-                config_manager::refresh_stores(app);
             }
             RunEvent::Exit => {
                 engine::stop(app);

@@ -51,11 +51,6 @@ pub fn apply(app: &AppHandle, config: &mut Config) {
         }
     };
 
-    // 先重读磁盘：前端（JS 侧的 LazyStore）会直接写这个文件，缓存里可能还是启动时的
-    // 旧值 —— 而下面那次 `save()` 是把**整个缓存**写回文件，不重读就会把前端
-    // 刚写的键覆盖掉
-    crate::config_manager::reload_store(app, "system.json");
-
     let stored = |key: &str| {
         store
             .get(key)

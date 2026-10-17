@@ -421,33 +421,12 @@ pub fn reset_stores<R: Runtime>(app_handle: &AppHandle<R>) -> Result<(), String>
     Ok(())
 }
 
-/// 让本进程的 store 缓存与磁盘对齐。
-///
-/// 前端（JS 侧的 `LazyStore`）会**直接**写 `user.json` / `system.json`，而本进程的
-/// store 缓存是启动时从磁盘加载的。不重读会踩两个坑：
-/// - 读：设置页保存后立刻重读，拿到的还是旧值；
-/// - 写：插件在 `RunEvent::Exit` 会把**缓存**写回文件（tauri-plugin-store 的
-///   `on_event`），于是前端这次会话写进去的东西被启动时的旧缓存覆盖掉
-///   （表现：`last-check-update-time` 永远是启动那一刻的旧值 ⇒ 每次启动都检查更新）。
-pub fn reload_store<R: Runtime>(app_handle: &AppHandle<R>, file: &str) {
-    match app_handle.store(file) {
-        Ok(store) => {
-            if let Err(err) = store.reload_ignore_defaults() {
-                log::warn!("[Motr] {file}: 重读磁盘失败: {err}");
-            }
-        }
-        Err(err) => log::warn!("[Motr] {file}: 打开失败: {err}"),
-    }
-}
-
 /// 把「默认值 + 存档」合并后的完整配置写回存档：缺失的键补齐、值不同的以合并结果为准。
 ///
 /// 原版用 `electron-store` 的 `defaults`，配置一读就把默认值写进文件，所以
 /// `user.json` / `system.json` 永远是完整可读的（缺什么键一眼可见、也能照着文件手改）。
 /// 移植后只剩内存兜底 ⇒ 文件里只有"被改过的键"，看起来像配置丢了
 ///（例：`last-check-update-time` 从没被写过，就查不到它当前是几）。
-///
-/// 调用前请先 `reload_store`（见那里的说明），否则会用旧缓存覆盖前端的写入。
 pub fn sync_store<R: Runtime, T: Serialize>(app_handle: &AppHandle<R>, file: &str, merged: &T) {
     let Ok(store) = app_handle.store(file) else {
         log::warn!("[Motr] {file}: 打开失败，跳过补默认值");
@@ -475,6 +454,34 @@ pub fn sync_store<R: Runtime, T: Serialize>(app_handle: &AppHandle<R>, file: &st
     }
 }
 
+/// 把一批键写进某个配置文件 —— 前端 `save_config` 命令的落点。
+///
+/// 约定：**Rust 是 `user.json` / `system.json` 的唯一写入者**。前端不再用 JS 侧的
+/// `LazyStore` 直接写文件 —— 那样 Rust 的 store 缓存会变旧：读（`get_app_config`）
+/// 拿不到新值，退出时插件还会把旧缓存写回盘（"改完设置要重启才生效"就是这么来的）。
+/// 走同一个 store 实例写，缓存与磁盘天然一致，所以这里不需要任何"先重读磁盘"的防御。
+pub fn write_keys<R: Runtime>(
+    app_handle: &AppHandle<R>,
+    file: &str,
+    entries: &serde_json::Map<String, serde_json::Value>,
+) -> Result<(), String> {
+    if entries.is_empty() {
+        return Ok(());
+    }
+
+    let store = app_handle
+        .store(file)
+        .map_err(|err| format!("打开 {file} 失败: {err}"))?;
+
+    for (key, value) in entries {
+        store.set(key.clone(), value.clone());
+    }
+
+    store
+        .save()
+        .map_err(|err| format!("写 {file} 失败: {err}"))
+}
+
 /// 存档里缺的、或与合并结果不一致的键（纯函数，便于测）
 ///
 /// 只挑"要写的"，不删存档里多出来的键 —— 结构体里没有的键（老版本残留、
@@ -490,14 +497,14 @@ fn keys_to_write(
         .collect()
 }
 
-/// 读 user.json：重读磁盘 → 用默认值兜底 → 把合并结果落盘（保持配置文件完整）
+/// 读 user.json：用默认值兜底 → 把合并结果落盘（保持配置文件完整）
+///
+/// Rust 是唯一写入者，缓存即真相，所以直接读缓存、不需要先重读磁盘。
 pub fn load_user_config<R: Runtime>(app_handle: &AppHandle<R>) -> UserConfig {
     let Ok(store) = app_handle.store("user.json") else {
         log::warn!("[Motr] 打开 user.json 失败，使用默认值");
         return UserConfig::default();
     };
-
-    reload_store(app_handle, "user.json");
 
     let config = UserConfig::from_store(&store).unwrap_or_else(|err| {
         log::warn!("[Motr] 解析 user.json 失败，使用默认值: {err}");
@@ -509,7 +516,7 @@ pub fn load_user_config<R: Runtime>(app_handle: &AppHandle<R>) -> UserConfig {
     config
 }
 
-/// 读 system.json：重读磁盘 → 用（依赖 app handle 的）默认值兜底 → 落盘
+/// 读 system.json：用（依赖 app handle 的）默认值兜底 → 落盘
 ///
 /// 默认值里的 `dir` / `dht-file-path*` 要靠 app handle 现算，所以不能用 `Default`，
 /// 详见 `from_store_with_defaults`。
@@ -519,23 +526,11 @@ pub fn load_system_config<R: Runtime>(app_handle: &AppHandle<R>) -> SystemConfig
         return SystemConfig::with_app_handle(app_handle);
     };
 
-    reload_store(app_handle, "system.json");
-
     let config = SystemConfig::from_store_with_defaults(app_handle, &store);
 
     sync_store(app_handle, "system.json", &config);
 
     config
-}
-
-/// 退出前把两个存档的缓存刷新成磁盘上的最新内容。
-///
-/// 放在 `RunEvent::ExitRequested`（先于 `Exit` 触发）里执行，正好赶在
-/// tauri-plugin-store 写盘之前，避免用旧缓存覆盖前端本次会话的写入。
-pub fn refresh_stores<R: Runtime>(app_handle: &AppHandle<R>) {
-    for path in ["user.json", "system.json"] {
-        reload_store(app_handle, path);
-    }
 }
 
 /// 「下载协议」的两个开关（magnet / thunder）：读 user.json，缺键或读不到时按默认值
