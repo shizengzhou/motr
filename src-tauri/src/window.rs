@@ -284,12 +284,12 @@ pub(crate) fn mark_focus_after_restart(app: &AppHandle) {
         return;
     };
 
-    if let Some(parent) = path.parent() {
-        if let Err(err) = std::fs::create_dir_all(parent) {
-            log::warn!("[Motr] 创建重启标记目录失败: {err}");
+    if let Some(parent) = path.parent()
+        && let Err(err) = std::fs::create_dir_all(parent)
+    {
+        log::warn!("[Motr] 创建重启标记目录失败: {err}");
 
-            return;
-        }
+        return;
     }
 
     if let Err(err) = std::fs::write(&path, b"1") {

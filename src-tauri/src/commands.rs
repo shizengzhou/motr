@@ -178,12 +178,16 @@ pub fn get_app_config(app_handle: AppHandle) -> Result<Config, String> {
     let context = Context {
         platform: platform().to_string(),
         arch: arch().to_string(),
+        // 拿不到日志目录不该让整个启动链 panic（API Guidelines: C-FAILURE / C-QUESTION-MARK）
         log_path: app_handle
             .path()
             .app_log_dir()
-            .unwrap()
-            .to_string_lossy()
-            .to_string(),
+            .map(|dir| dir.to_string_lossy().into_owned())
+            .unwrap_or_else(|err| {
+                log::warn!("[Motr] 解析日志目录失败: {err}");
+
+                String::new()
+            }),
         session_path: get_session_path(&app_handle),
         engine_path: String::new(),
         aria2_bin_path: String::new(),

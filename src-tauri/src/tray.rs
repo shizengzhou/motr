@@ -6,8 +6,6 @@ use tauri::{
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
 };
 
-use crate::config_manager;
-
 /// 菜单模块按这个 id 找回托盘来挂右键菜单（menu::apply）
 pub const TRAY_ID: &str = "motr-tray";
 
@@ -113,7 +111,6 @@ pub(crate) fn set_active(app: &AppHandle, active: bool) {
     #[cfg(target_os = "macos")]
     {
         let _ = (app, active);
-        return;
     }
 
     #[cfg(any(target_os = "windows", target_os = "linux"))]

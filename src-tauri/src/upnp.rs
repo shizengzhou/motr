@@ -69,14 +69,14 @@ pub struct UpnpState {
 /// 期望的映射集合：开关开着才有（对应原项目 `getUPnPMappingEnabled()`）。
 ///
 /// 两个端口 × 两种协议，最多 4 条；配置里两个端口写成同一个值时去重。
-pub fn desired_mappings(enabled: bool, listen_port: u16, dht_listen_port: u16) -> Vec<Mapping> {
+pub fn desired_mappings(enabled: bool, ports: config_manager::ListenPorts) -> Vec<Mapping> {
     if !enabled {
         return Vec::new();
     }
 
     let mut mappings: Vec<Mapping> = Vec::new();
 
-    for port in [listen_port, dht_listen_port] {
+    for port in [ports.bt, ports.dht] {
         // 0 不是可用的监听端口（aria2 里 0 表示"随机"，我们拿不到实际值）
         if port == 0 {
             continue;
@@ -111,12 +111,9 @@ pub fn diff(mapped: &[Mapping], desired: &[Mapping]) -> (Vec<Mapping>, Vec<Mappi
 
 /// 读配置算期望值：开关来自 user.json，两个端口来自 system.json
 fn wanted<R: Runtime>(app: &AppHandle<R>) -> Vec<Mapping> {
-    let (listen_port, dht_listen_port) = config_manager::listen_ports(app);
-
     desired_mappings(
         config_manager::enable_upnp(app),
-        listen_port,
-        dht_listen_port,
+        config_manager::listen_ports(app),
     )
 }
 
@@ -427,16 +424,21 @@ async fn release_all<R: Runtime>(app: &AppHandle<R>, mappings: Vec<Mapping>) {
 mod tests {
     use super::*;
 
+    /// 测试里快速构造一对端口（生产代码只从 system.json 读，没有这种用法）
+    fn ports(bt: u16, dht: u16) -> config_manager::ListenPorts {
+        config_manager::ListenPorts { bt, dht }
+    }
+
     /// 开关关着就不该有任何映射（原项目关掉时会 stopUPnPMapping + closeClient）
     #[test]
     fn no_mapping_when_disabled() {
-        assert!(desired_mappings(false, 21301, 26701).is_empty());
+        assert!(desired_mappings(false, ports(21301, 26701)).is_empty());
     }
 
     /// 两个端口 × 两种协议 = 4 条，且两种协议都要（原项目 `map(port)` 就是这个语义）
     #[test]
     fn maps_both_protocols_for_both_ports() {
-        let mappings = desired_mappings(true, 21301, 26701);
+        let mappings = desired_mappings(true, ports(21301, 26701));
 
         assert_eq!(mappings.len(), 4);
         for (port, protocol) in [
@@ -455,14 +457,14 @@ mod tests {
     /// 端口为 0 时不映射（aria2 里 0 表示随机端口，拿不到实际值）
     #[test]
     fn skips_port_zero() {
-        assert!(desired_mappings(true, 0, 0).is_empty());
-        assert_eq!(desired_mappings(true, 0, 26701).len(), 2);
+        assert!(desired_mappings(true, ports(0, 0)).is_empty());
+        assert_eq!(desired_mappings(true, ports(0, 26701)).len(), 2);
     }
 
     /// 两个端口配成同一个值时不去重映射同一条
     #[test]
     fn dedups_same_port() {
-        assert_eq!(desired_mappings(true, 21301, 21301).len(), 2);
+        assert_eq!(desired_mappings(true, ports(21301, 21301)).len(), 2);
     }
 
     /// 差集：缺的补、多的撤

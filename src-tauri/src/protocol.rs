@@ -345,10 +345,10 @@ fn open_torrent_path(app: &AppHandle, path: &Path) {
 /// 对齐上游主进程里那段 `application:reveal-in-folder`：`showItemInFolder(path)`
 /// 配上 `sendCommandToAll('application:show-task-detail', { gid })`。
 fn reveal_in_folder(app: &AppHandle, path: Option<String>, gid: Option<String>) {
-    if let Some(path) = path {
-        if let Err(err) = app.opener().reveal_item_in_dir(&path) {
-            log::warn!("[Motr] 在文件管理器里定位 `{path}` 失败: {err}");
-        }
+    if let Some(path) = path
+        && let Err(err) = app.opener().reveal_item_in_dir(&path)
+    {
+        log::warn!("[Motr] 在文件管理器里定位 `{path}` 失败: {err}");
     }
 
     if let Some(gid) = gid {

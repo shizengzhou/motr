@@ -1,3 +1,15 @@
+//! Motr 的 Tauri 后端（Electron 版 Motrix 的 `src/main` 层移植）。
+//!
+//! 模块分工：
+//! - `config_manager`：`user.json` / `system.json` 的读写与默认值（Rust 是唯一写入者）
+//! - `engine`：aria2 sidecar 的启动、停止、会话
+//! - `menu` / `tray`：原生菜单与托盘（结构、文案在 `resources/menus/`）
+//! - `protocol`：`magnet:` / `thunder:` / `.torrent` 的系统集成
+//! - `window`：显示、聚焦、失焦隐藏、重启后置前
+//! - `upnp` / `proxy` / `run_mode` / `auto_launch`：路由器映射、代理、运行模式、开机自启
+//!
+//! 前端通过 `invoke_handler` 注册的命令调用，见 `commands` 模块。
+
 mod auto_launch;
 mod commands;
 mod config_manager;
@@ -191,9 +203,10 @@ pub fn run() {
                     .message(format!("Application startup failed: {e}"))
                     .kind(MessageDialogKind::Error)
                     .title("System Error")
-                    .show(move |result| match result {
-                        true => handle.exit(0),
-                        false => {}
+                    .show(move |result| {
+                        if result {
+                            handle.exit(0);
+                        }
                     });
             }
 

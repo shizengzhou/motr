@@ -220,7 +220,7 @@ fn plan(action: &MenuAction) -> Vec<MenuStep> {
                 None => MenuStep::Frontend {
                     command: command.to_string(),
                     // command-before/after 里的 ?参数按原项目那样作为唯一参数下发
-                    arg: arg.or_else(|| (!params.is_empty()).then(|| Value::Object(params))),
+                    arg: arg.or_else(|| (!params.is_empty()).then_some(Value::Object(params))),
                 },
             },
         }

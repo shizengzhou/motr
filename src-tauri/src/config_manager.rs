@@ -96,7 +96,8 @@ pub struct UserConfig {
 
 impl Default for UserConfig {
     fn default() -> Self {
-        let locale = tauri_plugin_os::locale().unwrap();
+        // locale() 返回 Option：系统语言取不到时回落到 en-US
+        let locale = tauri_plugin_os::locale().unwrap_or_else(|| "en-US".to_string());
 
         Self {
             auto_check_update: is_macos(),
@@ -111,7 +112,7 @@ impl Default for UserConfig {
             keep_window_state: false,
             last_check_update_time: 0,
             last_sync_tracker_time: 0,
-            locale: locale,
+            locale,
             log_level: "warn".to_string(),
             new_task_show_downloading: true,
             no_confirm_before_delete_task: false,
@@ -344,7 +345,7 @@ impl Default for Proxy {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 pub enum ProxyScope {
     Download,
     UpdateApp,
@@ -379,7 +380,7 @@ impl AppRunMode {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 pub enum AppTheme {
     Auto,
     Light,
@@ -396,7 +397,7 @@ impl AppTheme {
     }
 }
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct WindowState {}
 
@@ -557,15 +558,30 @@ pub fn enable_upnp<R: Runtime>(app_handle: &AppHandle<R>) -> bool {
         .unwrap_or(true)
 }
 
-/// 需要映射到路由器的两个监听端口（BT / DHT）：读 system.json，缺键或读不到时按默认值
-pub fn listen_ports<R: Runtime>(app_handle: &AppHandle<R>) -> (u16, u16) {
+/// 需要映射到路由器的两个监听端口
+///
+/// 用具名结构体而不是 `(u16, u16)`：两个端口同类型，元组在调用处只能靠位置区分，
+/// 传反了编译器不会管（API Guidelines: C-CUSTOM-TYPE）。
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct ListenPorts {
+    /// BT 监听端口（aria2 的 `listen-port`）
+    pub bt: u16,
+    /// DHT 监听端口（aria2 的 `dht-listen-port`）
+    pub dht: u16,
+}
+
+/// 读 system.json 算出这两个端口，缺键或读不到时按默认值
+pub fn listen_ports<R: Runtime>(app_handle: &AppHandle<R>) -> ListenPorts {
     let system_config = app_handle
         .store("system.json")
         .ok()
         .and_then(|store| SystemConfig::from_store(&store).ok())
         .unwrap_or_default();
 
-    (system_config.listen_port, system_config.dht_listen_port)
+    ListenPorts {
+        bt: system_config.listen_port,
+        dht: system_config.dht_listen_port,
+    }
 }
 
 /// 设置页里的日志等级：读 user.json，缺键或读不到时按默认值（warn）
@@ -655,17 +671,11 @@ pub fn run_mode<R: Runtime>(app_handle: &AppHandle<R>) -> AppRunMode {
 }
 
 pub fn is_macos() -> bool {
-    #[cfg(target_os = "macos")]
-    return true;
-
-    false
+    cfg!(target_os = "macos")
 }
 
 pub fn is_windows_or_linux() -> bool {
-    #[cfg(any(target_os = "windows", target_os = "linux"))]
-    return true;
-
-    false
+    cfg!(any(target_os = "windows", target_os = "linux"))
 }
 
 #[cfg(test)]

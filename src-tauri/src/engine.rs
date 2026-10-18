@@ -260,10 +260,10 @@ fn warn_if_rpc_port_taken(config: &Config) {
 pub fn stop(app_handle: &AppHandle) {
     log::info!("[Motr] engine.stop");
 
-    if let Some(child) = app_handle.state::<EngineChild>().0.lock().unwrap().take() {
-        if let Err(e) = child.kill() {
-            log::warn!("[Motr] engine.stop failed: {e}");
-        }
+    if let Some(child) = app_handle.state::<EngineChild>().0.lock().unwrap().take()
+        && let Err(e) = child.kill()
+    {
+        log::warn!("[Motr] engine.stop failed: {e}");
     }
 }
 
@@ -370,10 +370,9 @@ fn engine_config(
     system_config: &SystemConfig,
 ) -> HashMap<String, serde_json::Value> {
     let mut extra_config: HashMap<String, serde_json::Value> = serde_json::to_value(system_config)
-        .unwrap()
-        .as_object()
-        .cloned()
-        .unwrap()
+        .ok()
+        .and_then(|value| value.as_object().cloned())
+        .unwrap_or_default()
         .into_iter()
         .collect();
 
