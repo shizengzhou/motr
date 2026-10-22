@@ -33,7 +33,7 @@ export default {
 
     // 监听已就位：前端 ProtocolManager 补发冷启动攒下的 deep link 命令；
     // Rust 侧只负责 .torrent 文件关联，也保留自己的队列
-    window.application?.protocolManager?.ready();
+    window.application?.protocolManager?.onReady();
 
     invoke('protocol_ready').catch((err) => {
       console.warn('[Motr] protocol ready fail:', err);

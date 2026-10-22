@@ -65,8 +65,14 @@ export default class ProtocolManager {
     }
   }
 
-  /** Ipc.vue 挂上 command 监听后调用：补发攒下的命令 */
-  ready() {
+  /// Ipc.vue 挂上 command 监听后调用：补发攒下的命令
+  ///
+  /// 注意不能叫 `ready()`：构造函数里 `this.ready = false` 是布尔标志，
+  /// 实例属性会遮蔽原型方法，`protocolManager.ready()` 会抛
+  /// "not a function"（Ipc.vue 的 created 是 async，抛错后
+  /// `invoke('protocol_ready')` 永远执行不到，Rust 侧攒下的
+  /// .torrent 命令就永远发不出去 —— 表现为右键打开种子没弹框）
+  onReady() {
     this.ready = true;
 
     const pending = this.pending;

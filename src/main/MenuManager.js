@@ -43,6 +43,11 @@ export default class MenuManager {
     this.keystrokes = Object.fromEntries(
       Object.entries(keymap).map(([keystroke, command]) => [command, keystroke])
     );
+
+    // command -> 菜单节点：buildItem 时填充，快捷键分发要走和菜单点击
+    // 完全相同的 handleCommand（带 command-before / command-after / command-arg）
+    this.nodesByCommand = {};
+    this.shortcutsBound = false;
   }
 
   get i18n() {
@@ -66,6 +71,7 @@ export default class MenuManager {
     this.items = {};
 
     const template = this.getTemplate();
+    this.nodesByCommand = {};
     const items = await this.buildItems(template.menu);
     const menu = await Menu.new({ items });
 
@@ -75,6 +81,8 @@ export default class MenuManager {
     } else {
       await menu.setAsWindowMenu(this.window);
     }
+
+    this.bindShortcuts();
   }
 
   async handleLocaleChange(locale) {
@@ -103,6 +111,10 @@ export default class MenuManager {
   async buildItem(node) {
     if (node.type === 'separator') {
       return PredefinedMenuItem.new({ item: 'Separator' });
+    }
+
+    if (node.command) {
+      this.nodesByCommand[node.command] = node;
     }
 
     const text = translate(node, this.i18n);
@@ -135,5 +147,81 @@ export default class MenuManager {
       this.items[node.id] = item;
     }
     return item;
+  }
+
+  /// Win/Linux 的窗口菜单加速键到不了应用的消息循环：tauri 在 Windows 上靠
+  /// msg hook 调 TranslateAcceleratorW（tauri app.rs），但窗口聚焦时键盘焦点
+  /// 一直在 WebView2 子窗口上，hook 看到的 msg.hwnd 不是挂了口令表的顶层窗口，
+  /// 加速键永远不触发（Linux/GTK 同理）。实测表现为「菜单项旁有快捷键字样、
+  /// 点击菜单正常、按键无反应」。
+  /// macOS 的 App 菜单是 NSMenu，key equivalent 由系统在 webview 之前处理，不受影响。
+  /// 这里在渲染进程补一层 keydown，用同一份 keymap 查命令、走与菜单点击相同的
+  /// handleCommand——效果与原 Electron 版的菜单加速键一致。
+  bindShortcuts() {
+    if (this.shortcutsBound || is.macOS()) {
+      return;
+    }
+
+    // 捕获阶段 + preventDefault：和原生菜单加速键一样，按键不到页面
+    window.addEventListener('keydown', this.handleShortcut, true);
+    this.shortcutsBound = true;
+  }
+
+  handleShortcut = (event) => {
+    const hit = this.findCommandForKeystroke(event);
+    if (!hit) {
+      return;
+    }
+
+    event.preventDefault();
+
+    const { command, node } = hit;
+    if (node) {
+      handleCommand(node);
+    } else {
+      // keymap 里有、菜单里却没有独立节点的命令（如 quit 是 role 项，
+      // 由系统的预定义菜单项实现）：没有 command-before/after/arg，
+      // 直接分发命令即可（与点菜单等价）
+      window.application?.sendCommandToAll(command);
+    }
+  };
+
+  findCommandForKeystroke(event) {
+    const parts = [];
+    if (event.ctrlKey) {
+      parts.push('ctrl');
+    }
+    if (event.metaKey) {
+      parts.push('cmd');
+    }
+    if (event.shiftKey) {
+      parts.push('shift');
+    }
+    if (event.altKey) {
+      parts.push('alt');
+    }
+
+    const key = event.key && event.key.toLowerCase();
+    if (!key) {
+      return null;
+    }
+    parts.push(key);
+
+    // keymap 用 cmdctrl 表示「平台主修饰键」（Windows 上就是 Ctrl）。
+    // 同一次按键要同时试 "ctrl-..." 和 "cmdctrl-..." 两种拼写：
+    // Ctrl+Shift+A 直接命中 ctrl-shift-a，Ctrl+Shift+N 命中 cmdctrl-shift-n
+    const candidates = [parts.join('-')];
+    if (parts[0] === 'ctrl' || parts[0] === 'cmd') {
+      candidates.push(['cmdctrl', ...parts.slice(1)].join('-'));
+    }
+
+    for (const keystroke of candidates) {
+      const command = keymap[keystroke];
+      if (command) {
+        return { command, node: this.nodesByCommand[command] };
+      }
+    }
+
+    return null;
   }
 }
