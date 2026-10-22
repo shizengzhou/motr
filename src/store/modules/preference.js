@@ -7,8 +7,7 @@ import {
   removeArrayItem,
 } from '@shared/utils';
 import { fetchBtTrackerFromSource } from '@shared/utils/tracker';
-import { MAX_NUM_OF_DIRECTORIES, PROXY_SCOPES } from '@shared/constants';
-import { proxyUrlForScope } from '@/utils/proxy';
+import { MAX_NUM_OF_DIRECTORIES } from '@shared/constants';
 
 const state = {
   engineMode: 'MAX',
@@ -125,14 +124,8 @@ const actions = {
     commit('UPDATE_PREFERENCE_DATA', config);
   },
   fetchBtTracker(_, trackerSource = []) {
-    // 代理按「更新 Tracker」这个 scope 取（原项目交给 axios 的 config.proxy，
-    // 那套只对 Node 生效）；请求本身由 http 插件在 Rust 侧发出，不受 CORS 限制
-    const proxyUrl = proxyUrlForScope(
-      state.config.proxy,
-      PROXY_SCOPES.UPDATE_TRACKERS
-    );
-
-    return fetchBtTrackerFromSource(trackerSource, proxyUrl);
+    // 与原版一致：Tracker 列表请求走系统网络栈，不读设置里的代理
+    return fetchBtTrackerFromSource(trackerSource);
   },
   toggleEngineMode() {},
 };

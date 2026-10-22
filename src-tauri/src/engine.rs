@@ -304,11 +304,7 @@ pub fn reset_session(app_handle: &AppHandle) {
         }
 
         match commands::get_app_config(app.clone()) {
-            Ok(mut config) => {
-                // 与启动时那套一样（lib.rs 的 setup）：先把 user.json 的代理映射
-                // 进 system.json 与 Config，再起引擎
-                crate::proxy::apply(&app, &mut config);
-
+            Ok(config) => {
                 match start(&app, &config) {
                     Ok(()) => log::info!(
                         "[Motr] 会话已重置：引擎按空会话重启（download.session 会在 10 秒内\

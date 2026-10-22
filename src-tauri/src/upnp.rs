@@ -21,7 +21,7 @@ use std::sync::Mutex;
 use std::time::Duration;
 
 use igd_next::aio::Gateway;
-use igd_next::aio::tokio::{search_gateway, Tokio};
+use igd_next::aio::tokio::{Tokio, search_gateway};
 use igd_next::{AddPortError, PortMappingProtocol, RemovePortError, SearchOptions};
 use tauri::{AppHandle, Manager, Runtime};
 

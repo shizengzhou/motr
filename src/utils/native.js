@@ -16,7 +16,7 @@ import store from '@/store';
 import { Message } from 'element-ui';
 
 import { isMagnetTask, getFileNameFromFile } from '@shared/utils';
-import { APP_THEME, TASK_STATUS } from '@shared/constants';
+import { TASK_STATUS } from '@shared/constants';
 
 export const showItemInFolder = (fullPath, { errorMsg }) => {
   if (!fullPath) {
@@ -168,19 +168,7 @@ export const moveTaskFilesToTrash = async (task) => {
 };
 
 export const getSystemTheme = async () => {
-  const theme = await getCurrentWindow().theme();
-  return theme === 'dark' ? APP_THEME.DARK : APP_THEME.LIGHT;
-};
-
-/**
- * 订阅系统主题变化（preference 里 theme 设为 auto 时用它跟随系统）。
- * Tauri 侧对应的事件是 tauri://theme-changed，payload 为 'light' / 'dark'。
- * 返回取消监听的函数。
- */
-export const onSystemThemeChange = (handler) => {
-  return getCurrentWindow().onThemeChanged(({ payload }) => {
-    handler(payload === 'dark' ? APP_THEME.DARK : APP_THEME.LIGHT);
-  });
+  return await getCurrentWindow().theme();
 };
 
 export const delayDeleteTaskFiles = (task, delay) => {

@@ -2,14 +2,9 @@ use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
-use tauri::LogicalSize;
 use tauri::{AppHandle, Manager, WindowEvent};
-use tauri_plugin_window_state::{StateFlags, WindowExt};
 
 use crate::config_manager::{self, AppRunMode, auto_hide_window_enabled};
-
-const DEFAULT_WINDOW_WIDTH: f64 = 1024.0;
-const DEFAULT_WINDOW_HEIGHT: f64 = 768.0;
 
 /// 失焦时是否该隐藏窗口
 ///
@@ -38,38 +33,6 @@ pub fn mark_quitting() {
 /// 退出途中别再把手动停掉的引擎拉起来，否则会留一个孤儿 aria2
 pub(crate) fn is_quitting() -> bool {
     WILL_QUIT.load(Ordering::SeqCst)
-}
-
-/// 窗口状态里保存/恢复哪些东西。
-///
-/// 只保留尺寸和位置 —— 原项目存的也是 `window.getBounds()` 的 x/y/width/height，
-/// 不记全屏/最大化（退出时若在最大化状态，插件存的是最大化之前的尺寸，回来就是那个尺寸）。
-pub(crate) const STATE_FLAGS: StateFlags = StateFlags::SIZE.union(StateFlags::POSITION);
-
-/// 「恢复上次退出时的窗口大小和位置」。
-///
-/// 对齐原项目 `WindowManager.getPageBounds` + `openWindow` 里那句 `window.setBounds(bounds)`：
-/// 开了这个开关才用上次的 bounds，关着就用 tauri.conf.json 里的默认尺寸（1024×768）。
-///
-/// 窗口状态存在 `window-state` 插件自己的文件里（`.window-state.json`），
-/// 由它在 `RunEvent::Exit` 时写入，这里只负责**按开关决定要不要读回来** ——
-/// 插件默认是无条件自动恢复的，lib.rs 里用 `skip_initial_state("main")` 把它关掉了。
-pub fn restore_state(app: &AppHandle) {
-    if !config_manager::keep_window_state(app) {
-        log::info!("[Motr] 未开启「恢复窗口状态」，使用默认窗口尺寸");
-        return;
-    }
-
-    let Some(window) = app.get_webview_window("main") else {
-        log::warn!("[Motr] 找不到主窗口，无法恢复窗口状态");
-        return;
-    };
-
-    // 插件会校验保存的位置是否还在当前显示器范围内，越界的位置不会照搬
-    match window.restore_state(STATE_FLAGS) {
-        Ok(()) => log::info!("[Motr] 已恢复上次退出时的窗口大小和位置"),
-        Err(err) => log::warn!("[Motr] 恢复窗口状态失败: {err}"),
-    }
 }
 
 /// 「自动隐藏窗口」：窗口一失去焦点就隐藏。
@@ -135,122 +98,13 @@ pub(crate) fn show_main_window(app: &AppHandle) {
     #[cfg(target_os = "macos")]
     let _ = app.show();
 
-    #[cfg(target_os = "macos")]
-    activate_app(app);
+    // #[cfg(target_os = "macos")]
+    // activate_app(app);
 
     if let Some(window) = app.get_webview_window("main") {
         let _ = window.show();
         let _ = window.unminimize();
         let _ = window.set_focus();
-    }
-}
-
-/// 「隐藏菜单栏」：按 user.json 的 hide-app-menu 设置窗口装饰（原生标题栏）。
-///
-/// 仅 Windows / Linux 生效 —— macOS 是 Overlay 标题栏 + 交通灯，不归这个开关管
-///（设置页那个勾选框在 macOS 上本来也是隐藏的）。
-///
-/// 勾选 = 去掉原生标题栏：无边框窗口，由前端自定义标题栏负责拖动与窗口按钮；
-/// 取消 = 恢复原生标题栏。两种状态下边缘拖拽缩放都由 Tauri 自行接管
-///（无边框时挂 resize handler，见 tauri-runtime-wry 的 SetDecorations 处理），
-/// 所以 `resizable` 两个状态下都保持可用。
-///
-/// 调用时机：
-/// - 启动时（lib.rs 的 setup，放在窗口显示之前，避免先闪一下原生标题栏）；
-/// - 设置页保存后（前端 invoke `apply_hide_app_menu`，前端按钮的显隐走 Vue 响应式，
-///   那边自己会更新，这里只负责原生装饰这一半）。
-pub fn apply_hide_app_menu(app: &AppHandle) {
-    if !config_manager::is_windows_or_linux() {
-        return;
-    }
-
-    let Some(window) = app.get_webview_window("main") else {
-        log::warn!("[Motr] 找不到主窗口，无法应用「隐藏菜单栏」设置");
-        return;
-    };
-
-    let hide_menu = config_manager::hide_app_menu_enabled(app);
-    let decorations = !hide_menu;
-
-    // 没变化就不动：每次 set_decorations 都会重算窗口样式，能省则省。
-    // 读不到当前状态时按"需要改"处理（unwrap_or 的参数与 decorations 必然不同）
-    if window.is_decorated().unwrap_or(!decorations) == decorations {
-        return;
-    }
-
-    match window.set_decorations(decorations) {
-        Ok(()) => {
-            log::info!("[Motr] 已应用「隐藏菜单栏」（hide={hide_menu}，decorations={decorations}）")
-        }
-        Err(err) => log::error!("[Motr] 设置窗口装饰失败（decorations={decorations}）: {err}"),
-    }
-}
-
-/// 小屏幕适配：主显示器工作区不够大时，把窗口尺寸缩一档。
-///
-/// 对齐上游 Motrix 创建窗口时的同一段逻辑（`WindowManager.getPageOptions` 里的
-/// "Optimized for small screen users"）：宽、高各自判断 —— 工作区宽 >= 1280 或
-/// 高 >= 800 的维度保持原尺寸，不够的维度缩到 87.5%（1024×768 → 896×672）。
-/// 只缩不放，屏幕够大时配置尺寸原样不动。
-///
-/// 工作区与窗口尺寸都按各自缩放因子换算成**逻辑像素**（与 tauri.conf.json 里
-/// width/height 同一单位；Electron 的 workAreaSize 也是逻辑像素）。
-///
-/// 在 restore_state 之前调用：开了「恢复窗口状态」时以上次保存的 bounds 为准
-///（与上游一致 —— 缩放只影响默认尺寸，不覆盖用户存过的大小）。
-/// 拿不到显示器信息时不动尺寸，不阻塞启动。
-pub fn fit_window_to_display(app: &AppHandle) {
-    let Some(window) = app.get_webview_window("main") else {
-        return;
-    };
-
-    let monitor = match window.primary_monitor() {
-        Ok(Some(monitor)) => monitor,
-        Ok(None) => {
-            log::warn!("[Motr] 找不到主显示器，跳过小屏幕窗口适配");
-            return;
-        }
-        Err(err) => {
-            log::warn!("[Motr] 获取主显示器失败，跳过小屏幕窗口适配: {err}");
-            return;
-        }
-    };
-
-    let monitor_scale = monitor.scale_factor();
-    let work = monitor.work_area().size;
-    let work_width = work.width as f64 / monitor_scale;
-    let work_height = work.height as f64 / monitor_scale;
-
-    let width_scale = if work_width >= 1280.0 { 1.0 } else { 0.875 };
-    let height_scale = if work_height >= 800.0 { 1.0 } else { 0.875 };
-    if width_scale == 1.0 && height_scale == 1.0 {
-        return;
-    }
-
-    let width = DEFAULT_WINDOW_WIDTH * width_scale;
-    let height = DEFAULT_WINDOW_HEIGHT * height_scale;
-
-    // let inner = match window.inner_size() {
-    //     Ok(inner) => inner,
-    //     Err(err) => {
-    //         log::warn!("[Motr] 读取窗口尺寸失败，跳过小屏幕窗口适配: {err}");
-    //         return;
-    //     }
-    // };
-
-    // // inner_size 是物理像素，用窗口自己的缩放因子换算回逻辑像素，再按各自维度缩放
-    // let window_scale = window.scale_factor().unwrap_or(monitor_scale);
-    // let width = (inner.width as f64 / window_scale * width_scale).round();
-    // let height = (inner.height as f64 / window_scale * height_scale).round();
-
-    log::info!(
-        "[Motr] 屏幕工作区 {work_width:.0}×{work_height:.0} 不足，\
-         窗口尺寸缩至 {width:.0}×{height:.0}"
-    );
-
-    println!("logical size: {:?}", LogicalSize::new(width, height));
-    if let Err(err) = window.set_size(LogicalSize::new(width, height)) {
-        log::warn!("[Motr] 调整窗口尺寸失败: {err}");
     }
 }
 
@@ -451,30 +305,4 @@ mod tests {
         assert!(!hide_on_blur(false, AppRunMode::HideTray));
     }
 
-    /// 恢复的只有尺寸和位置（不多不少，对齐原项目存的 getBounds）
-    #[test]
-    fn state_flags_cover_size_and_position() {
-        assert!(STATE_FLAGS.contains(StateFlags::SIZE));
-        assert!(STATE_FLAGS.contains(StateFlags::POSITION));
-        // 除了这两位没有别的（StateFlags 没有实现 PartialEq，比 bits）
-        assert_eq!(
-            STATE_FLAGS.bits(),
-            StateFlags::SIZE.union(StateFlags::POSITION).bits()
-        );
-    }
-
-    /// 这几项都不能恢复：`VISIBLE` 会让托盘应用模式一启动就弹出窗口，
-    /// `DECORATIONS` 会覆盖 tauri.conf.json 里的 Overlay 标题栏设置，
-    /// `MAXIMIZED` / `FULLSCREEN` 原项目也不恢复
-    #[test]
-    fn state_flags_exclude_visible_decorations_and_window_mode() {
-        for flag in [
-            StateFlags::VISIBLE,
-            StateFlags::DECORATIONS,
-            StateFlags::MAXIMIZED,
-            StateFlags::FULLSCREEN,
-        ] {
-            assert!(!STATE_FLAGS.contains(flag), "{flag:?} 不该被恢复");
-        }
-    }
 }

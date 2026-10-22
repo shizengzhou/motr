@@ -284,9 +284,9 @@
         <el-button type="primary" @click="submitForm('basicForm')">
           {{ $t('preferences.save') }}
         </el-button>
-        <el-button @click="resetForm('basicForm')">
+        <!-- <el-button @click="resetForm('basicForm')">
           {{ $t('preferences.discard') }}
-        </el-button>
+        </el-button> -->
       </div>
     </el-main>
   </el-container>
@@ -294,8 +294,7 @@
 
 <script>
 import is from '@/utils/is';
-import { confirm } from '@tauri-apps/plugin-dialog';
-import { invoke } from '@tauri-apps/api/core';
+import { confirm } from '@/utils/dialog';
 import { mapState } from 'vuex';
 import { cloneDeep, extend, isEmpty } from 'lodash';
 import SubnavSwitcher from '@/components/Subnav/SubnavSwitcher.vue';
@@ -401,7 +400,7 @@ export default {
     const { locale } = this.$store.state.preference.config;
     const formOriginal = initForm(this.$store.state.preference.config);
     let form = {};
-    form = initForm(extend(form, formOriginal, changedConfig.basic));
+    form = initForm(extend(form, formOriginal));
 
     return {
       form,
@@ -598,29 +597,9 @@ export default {
         this.$store
           .dispatch('preference/save', data)
           .then(() => {
-            // 运行模式（托盘是否创建 / Dock 图标是否显示）由 Rust 侧读 user.json 再应用，
-            // 所以必须等配置落盘之后再调（见 src-tauri/src/run_mode.rs）
-            if ('runMode' in data) {
-              invoke('apply_run_mode').catch((err) => {
-                console.warn('[Motr] apply run mode fail:', err);
-              });
-            }
-
-            // 开机自启同理：由 Rust 侧读 user.json 后改写系统登录项
-            //（见 src-tauri/src/auto_launch.rs）
+            // 开机自启：由前端 AutoLaunchManager 改写系统登录项
             if ('openAtLogin' in data) {
-              invoke('apply_auto_launch').catch((err) => {
-                console.warn('[Motr] apply auto launch fail:', err);
-              });
-            }
-
-            // 「隐藏菜单栏」控制窗口装饰（原生标题栏）：勾选=无边框，取消=恢复原生标题栏。
-            // 由 Rust 侧读 user.json 后 setDecorations（见 src-tauri/src/window.rs 的
-            // apply_hide_app_menu）；前端自定义标题栏上的窗口按钮走 Vue 响应式，自己会更新
-            if ('hideAppMenu' in data) {
-              invoke('apply_hide_app_menu').catch((err) => {
-                console.warn('[Motr] apply hide app menu fail:', err);
-              });
+              window.application?.autoLaunchManager?.apply(data.openAtLogin);
             }
 
             this.$store.dispatch('app/fetchEngineOptions');

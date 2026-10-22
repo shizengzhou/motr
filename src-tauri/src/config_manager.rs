@@ -63,6 +63,7 @@ pub const XIU2_TRACKERS_BLACK_URL: &str =
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "kebab-case", default)]
 pub struct UserConfig {
+    pub all_proxy_backup: String,
     pub auto_check_update: bool,
     pub auto_hide_window: bool,
     pub auto_sync_tracker: bool,
@@ -81,7 +82,6 @@ pub struct UserConfig {
     pub no_confirm_before_delete_task: bool,
     pub open_at_login: bool,
     pub protocols: Protocols,
-    pub proxy: Proxy,
     pub resume_all_when_app_launched: bool,
     pub run_mode: u8,
     pub show_progress_bar: bool,
@@ -91,6 +91,7 @@ pub struct UserConfig {
     pub tray_theme: String,
     pub tray_speedometer: bool,
     pub update_channel: String,
+    pub use_proxy: bool,
     pub window_state: WindowState,
 }
 
@@ -99,6 +100,7 @@ impl Default for UserConfig {
         let locale = tauri_plugin_os::locale().unwrap();
 
         Self {
+            all_proxy_backup: String::new(),
             auto_check_update: is_macos(),
             auto_hide_window: false,
             auto_sync_tracker: true,
@@ -117,7 +119,6 @@ impl Default for UserConfig {
             no_confirm_before_delete_task: false,
             open_at_login: false,
             protocols: Protocols::default(),
-            proxy: Proxy::default(),
             resume_all_when_app_launched: false,
             run_mode: AppRunMode::Standard as u8,
             show_progress_bar: true,
@@ -130,6 +131,7 @@ impl Default for UserConfig {
             tray_theme: AppTheme::Auto.as_str().to_string(),
             tray_speedometer: is_macos(),
             update_channel: "latest".to_string(),
+            use_proxy: false,
             window_state: WindowState {},
         }
     }
@@ -320,47 +322,6 @@ impl Default for Protocols {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(default)]
-pub struct Proxy {
-    pub enable: bool,
-    pub server: String,
-    pub bypass: String,
-    pub scope: Vec<String>,
-}
-
-impl Default for Proxy {
-    fn default() -> Self {
-        Self {
-            enable: false,
-            server: "".to_string(),
-            bypass: "".to_string(),
-            scope: vec![
-                ProxyScope::Download.as_str().to_string(),
-                ProxyScope::UpdateApp.as_str().to_string(),
-                ProxyScope::UpdateTrackers.as_str().to_string(),
-            ],
-        }
-    }
-}
-
-#[derive(Debug, Serialize)]
-pub enum ProxyScope {
-    Download,
-    UpdateApp,
-    UpdateTrackers,
-}
-
-impl ProxyScope {
-    pub fn as_str(&self) -> &str {
-        match self {
-            ProxyScope::Download => "download",
-            ProxyScope::UpdateApp => "update-app",
-            ProxyScope::UpdateTrackers => "update-trackers",
-        }
-    }
-}
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 pub enum AppRunMode {
     Standard = 1,
@@ -477,9 +438,7 @@ pub fn write_keys<R: Runtime>(
         store.set(key.clone(), value.clone());
     }
 
-    store
-        .save()
-        .map_err(|err| format!("写 {file} 失败: {err}"))
+    store.save().map_err(|err| format!("写 {file} 失败: {err}"))
 }
 
 /// 存档里缺的、或与合并结果不一致的键（纯函数，便于测）
@@ -533,90 +492,60 @@ pub fn load_system_config<R: Runtime>(app_handle: &AppHandle<R>) -> SystemConfig
     config
 }
 
+/// 从配置文件里直接取一个键再反序列化。
+///
+/// 下面这些开关都是「现读现用」的（失焦、切协议、改 UPnP…）。单键读取比
+/// `UserConfig::from_store` / `SystemConfig::from_store` 整份反序列化便宜，
+/// 也不会因为某个无关的键类型不对就让整份配置回落到默认值；
+/// 缺键或类型不对时返回 `None`，由调用方决定默认值。
+fn get_value<T, R>(app_handle: &AppHandle<R>, file: &str, key: &str) -> Option<T>
+where
+    T: serde::de::DeserializeOwned,
+    R: Runtime,
+{
+    app_handle
+        .store(file)
+        .ok()
+        .and_then(|store| store.get(key))
+        .and_then(|value| serde_json::from_value(value).ok())
+}
+
 /// 「下载协议」的两个开关（magnet / thunder）：读 user.json，缺键或读不到时按默认值
 ///（magnet 开、thunder 关，与原项目一致）
 /// 开关能在运行中改（见 protocol.rs），所以这里是现读现用。
 pub fn protocols<R: Runtime>(app_handle: &AppHandle<R>) -> Protocols {
-    app_handle
-        .store("user.json")
-        .ok()
-        .and_then(|store| UserConfig::from_store(&store).ok())
-        .map(|config| config.protocols)
-        .unwrap_or_default()
+    get_value(app_handle, "user.json", "protocols").unwrap_or_default()
 }
 
 /// 「启用 UPnP」是否开启：读 user.json，缺键或读不到时按默认值（true，与原项目一致）
 ///
 /// 开关能在运行中改（见 upnp.rs），所以这里是现读现用，不是只在启动时读一次。
 pub fn enable_upnp<R: Runtime>(app_handle: &AppHandle<R>) -> bool {
-    app_handle
-        .store("user.json")
-        .ok()
-        .and_then(|store| UserConfig::from_store(&store).ok())
-        .map(|config| config.enable_upnp)
-        .unwrap_or(true)
+    get_value(app_handle, "user.json", "enable-upnp").unwrap_or(true)
 }
 
 /// 需要映射到路由器的两个监听端口（BT / DHT）：读 system.json，缺键或读不到时按默认值
 pub fn listen_ports<R: Runtime>(app_handle: &AppHandle<R>) -> (u16, u16) {
-    let system_config = app_handle
-        .store("system.json")
-        .ok()
-        .and_then(|store| SystemConfig::from_store(&store).ok())
-        .unwrap_or_default();
+    let defaults = SystemConfig::default();
 
-    (system_config.listen_port, system_config.dht_listen_port)
+    (
+        get_value(app_handle, "system.json", "listen-port").unwrap_or(defaults.listen_port),
+        get_value(app_handle, "system.json", "dht-listen-port").unwrap_or(defaults.dht_listen_port),
+    )
 }
 
 /// 设置页里的日志等级：读 user.json，缺键或读不到时按默认值（warn）
 ///
 /// 只在启动时用一次（logging::init），所以设置页保存后下次启动生效。
 pub fn log_level<R: Runtime>(app_handle: &AppHandle<R>) -> String {
-    app_handle
-        .store("user.json")
-        .ok()
-        .and_then(|store| UserConfig::from_store(&store).ok())
-        .map(|config| config.log_level)
-        .unwrap_or_else(|| "warn".to_string())
-}
-
-/// 「恢复上次退出时的窗口大小和位置」是否开启：读 user.json，缺键或读不到时按默认值（false）
-///
-/// 只在启动时用一次（window::restore_state），所以设置页保存后下次启动生效。
-pub fn keep_window_state<R: Runtime>(app_handle: &AppHandle<R>) -> bool {
-    app_handle
-        .store("user.json")
-        .ok()
-        .and_then(|store| UserConfig::from_store(&store).ok())
-        .map(|config| config.keep_window_state)
-        .unwrap_or(false)
+    get_value(app_handle, "user.json", "log-level").unwrap_or_else(|| "warn".to_string())
 }
 
 /// 「自动隐藏窗口」是否开启：读 user.json，缺键或读不到时按默认值（false）
 ///
 /// 窗口失焦时现读现用，所以设置页保存后立刻生效，不需要前端额外通知。
 pub fn auto_hide_window_enabled<R: Runtime>(app_handle: &AppHandle<R>) -> bool {
-    app_handle
-        .store("user.json")
-        .ok()
-        .and_then(|store| UserConfig::from_store(&store).ok())
-        .map(|config| config.auto_hide_window)
-        .unwrap_or(false)
-}
-
-/// 「隐藏菜单栏」是否开启：读 user.json，缺键时按默认值（Win/Linux 为 true），
-/// 连存档都读不到时按平台默认值兜底
-///
-/// 与「自动隐藏窗口」的失焦现读不同，这个值控制窗口装饰（原生标题栏），
-/// 由设置页保存后前端调 `apply_hide_app_menu` 通知 Rust 重新应用
-///（见 window::apply_hide_app_menu）
-pub fn hide_app_menu_enabled<R: Runtime>(app_handle: &AppHandle<R>) -> bool {
-    app_handle
-        .store("user.json")
-        .ok()
-        .and_then(|store| UserConfig::from_store(&store).ok())
-        .map(|config| config.hide_app_menu)
-        .unwrap_or_else(is_windows_or_linux)
+    get_value(app_handle, "user.json", "auto-hide-window").unwrap_or(false)
 }
 
 /// 托盘主题（"auto" / "light" / "dark"）：读 user.json，缺键或读不到时按默认值（auto）
@@ -624,33 +553,21 @@ pub fn hide_app_menu_enabled<R: Runtime>(app_handle: &AppHandle<R>) -> bool {
 /// 只影响 Linux 的托盘图标选色（macOS 是 template 图自动反色，Windows 用彩色图标），
 /// 启动时读一次（见 tray::static_icon）
 pub fn tray_theme<R: Runtime>(app_handle: &AppHandle<R>) -> String {
-    app_handle
-        .store("user.json")
-        .ok()
-        .and_then(|store| UserConfig::from_store(&store).ok())
-        .map(|config| config.tray_theme)
+    get_value(app_handle, "user.json", "tray-theme")
         .unwrap_or_else(|| AppTheme::Auto.as_str().to_string())
 }
 
 /// 「开机自动启动」是否开启：读 user.json，缺键或读不到时按默认值（false）
 pub fn open_at_login<R: Runtime>(app_handle: &AppHandle<R>) -> bool {
-    app_handle
-        .store("user.json")
-        .ok()
-        .and_then(|store| UserConfig::from_store(&store).ok())
-        .map(|config| config.open_at_login)
-        .unwrap_or(false)
+    get_value(app_handle, "user.json", "open-at-login").unwrap_or(false)
 }
 
 /// 当前的运行模式：读 user.json，缺键或读不到时按默认值（Standard）
 ///
 /// 与「自动隐藏窗口」一样现读现用：设置页保存后由前端调 `apply_run_mode` 立即生效。
 pub fn run_mode<R: Runtime>(app_handle: &AppHandle<R>) -> AppRunMode {
-    app_handle
-        .store("user.json")
-        .ok()
-        .and_then(|store| UserConfig::from_store(&store).ok())
-        .map(|config| AppRunMode::from_u8(config.run_mode))
+    get_value(app_handle, "user.json", "run-mode")
+        .map(AppRunMode::from_u8)
         .unwrap_or(AppRunMode::Standard)
 }
 
@@ -767,17 +684,6 @@ mod tests {
         assert!(pending.iter().any(|(key, _)| key == "locale"));
     }
 
-    /// 默认 scope 的三个值必须和前端 `PROXY_SCOPES`（@shared/constants.js）一致，
-    /// 否则设置页那个多选框会显示成"一个都没选中"
-    #[test]
-    fn proxy_default_scope_matches_frontend() {
-        let proxy = Proxy::default();
-        assert_eq!(
-            proxy.scope,
-            vec!["download", "update-app", "update-trackers"]
-        );
-    }
-
     #[test]
     fn system_config_matches_system_json() {
         let value = serde_json::to_value(SystemConfig::default()).unwrap();
@@ -859,8 +765,8 @@ mod tests {
         let value = serde_json::to_value(&config).unwrap();
         let map = value.as_object().unwrap();
 
-        // Context 7 + UserConfig 29 + SystemConfig 31，说明三部分没有重名键（否则会少）
-        assert_eq!(map.len(), 7 + 29 + 31);
+        // Context 7 + UserConfig 30 + SystemConfig 31，说明三部分没有重名键（否则会少）
+        assert_eq!(map.len(), 7 + 30 + 31);
 
         // 三个来源的键都在同一层，且没有嵌套字段
         assert_eq!(value["platform"], "macos");
@@ -878,15 +784,16 @@ mod tests {
         // 模拟 user.json 只有部分键（store 里存的数据）
         let value = serde_json::json!({
             "log-level": "debug",
-            "proxy": { "enable": true },
+            "use-proxy": true,
+            "all-proxy-backup": "http://127.0.0.1:7890",
         });
 
         let config: UserConfig = serde_json::from_value(value).unwrap();
 
         assert_eq!(config.log_level, "debug");
-        assert!(config.proxy.enable);
+        assert!(config.use_proxy);
+        assert_eq!(config.all_proxy_backup, "http://127.0.0.1:7890");
         // 没写到的键回落到默认值
-        assert_eq!(config.proxy.scope, Proxy::default().scope);
         assert_eq!(config.theme, "auto");
         assert!(config.auto_sync_tracker);
     }

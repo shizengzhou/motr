@@ -1,6 +1,5 @@
 import { ADD_TASK_TYPE, APP_THEME } from '@shared/constants';
 import api from '@/api';
-import { getSystemTheme, onSystemThemeChange } from '@/utils/native';
 
 const BASE_INTERVAL = 1000;
 const PER_INTERVAL = 100;
@@ -101,35 +100,6 @@ const mutations = {
 const actions = {
   updateSystemTheme({ commit }, theme) {
     commit('UPDATE_SYSTEM_THEME', theme);
-  },
-  fetchSystemTheme({ state, commit }) {
-    return getSystemTheme()
-      .then((theme) => {
-        commit('UPDATE_SYSTEM_THEME', theme);
-        return theme;
-      })
-      .catch((err) => {
-        console.warn('[Motr] fetch system theme fail:', err);
-        return state.systemTheme;
-      });
-  },
-  /**
-   * 跟随系统主题：先读一次当前值，再订阅后续变化。
-   * theme 设为 auto 时，App.vue 的 themeClass 会跟着 systemTheme 变，
-   * 从而自动切换 html 上的 theme-light / theme-dark。
-   */
-  initSystemTheme({ dispatch, commit }) {
-    return dispatch('fetchSystemTheme')
-      .then(() => {
-        // 返回取消监听的函数，调用方需要时（如退出前）可以持有并调用
-        return onSystemThemeChange((theme) => {
-          commit('UPDATE_SYSTEM_THEME', theme);
-        });
-      })
-      .catch((err) => {
-        // 非 Tauri 环境（浏览器里跑 vite dev）拿不到这个 API，不该让启动流程报错
-        console.warn('[Motr] watch system theme fail:', err);
-      });
   },
   updateTrayFocused({ commit }, focused) {
     commit('UPDATE_TRAY_FOCUSED', focused);

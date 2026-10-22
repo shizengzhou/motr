@@ -1,9 +1,43 @@
-import { appDataDir, downloadDir, resolve } from '@tauri-apps/api/path';
+import {
+  appDataDir,
+  downloadDir,
+  resolve,
+  resolveResource,
+  join,
+} from '@tauri-apps/api/path';
+import { type } from '@tauri-apps/plugin-os';
 
 import {
+  APP_THEME,
   ENGINE_MAX_CONNECTION_PER_SERVER,
   IP_VERSION,
 } from '../shared/constants';
+
+export const getInverseTheme = (theme) => {
+  return theme === APP_THEME.LIGHT ? APP_THEME.DARK : APP_THEME.LIGHT;
+};
+
+export const transformConfig = (config) => {
+  const result = [];
+  for (const [k, v] of Object.entries(config)) {
+    if (v !== '') {
+      result.push(`--${k}=${v}`);
+    }
+  }
+  return result;
+};
+
+export const getEnginePidPath = async () => {
+  return await join(await appDataDir(), 'engine.pid');
+};
+
+export const getSessionPath = async () => {
+  return await join(await appDataDir(), 'download.session');
+};
+
+export const getAria2ConfPath = async () => {
+  return await resolveResource(`${type()}/aria2.conf`);
+};
 
 export const getMaxConnectionPerServer = () => {
   return ENGINE_MAX_CONNECTION_PER_SERVER;
@@ -11,11 +45,11 @@ export const getMaxConnectionPerServer = () => {
 
 export const getDhtPath = async (protocol) => {
   const name = protocol === IP_VERSION.V6 ? 'dht6.dat' : 'dht.dat';
-  return resolve(await appDataDir(), `./${name}`);
+  return await resolve(await appDataDir(), `./${name}`);
 };
 
-export const getUserDownloadsPath = () => {
-  return downloadDir();
+export const getUserDownloadsPath = async () => {
+  return await downloadDir();
 };
 
 const ELECTRON_DEFAULT_LOCALE = 'en-US';

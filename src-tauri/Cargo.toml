@@ -39,6 +39,7 @@ tauri-plugin-clipboard-manager = "2"
 # 菜单里"打开种子文件"要把文件内容 base64 后交给前端
 base64 = "0.22"
 tauri-plugin-notification = "2"
+tauri-plugin-fs = "2"
 
 # macOS：重启后把应用激活到前台。tao 用的是 activateIgnoringOtherApps:，
 # 它从 macOS 14 起被系统忽略（协作式激活模型），而 AppKit 只被 tao 间接依赖，

@@ -3,7 +3,7 @@ use tauri_plugin_os::{arch, platform};
 
 use crate::config_manager::{self, Config};
 use crate::context::{Context, get_aria2_conf_path, get_session_path};
-use crate::{auto_launch, engine, menu, protocol, run_mode, tray, upnp, window};
+use crate::{engine, ipc, protocol, upnp, window};
 
 /// 设置页保存：把「用户配置」「系统配置」写进 user.json / system.json。
 ///
@@ -85,32 +85,10 @@ pub fn reset_session(app: AppHandle) -> Result<(), String> {
     Ok(())
 }
 
-/// 设置页保存后调用：让系统里的默认客户端与 user.json 的 protocols 对齐
-#[tauri::command]
-pub fn apply_protocols(app: AppHandle) -> Result<(), String> {
-    protocol::apply(&app);
-    Ok(())
-}
-
-/// 前端挂上 `command` 监听后调用：补发冷启动时攒下的协议链接（见 protocol.rs）
+/// 前端挂上 `command` 监听后调用：补发冷启动时攒下的种子文件命令（见 protocol.rs）
 #[tauri::command]
 pub fn protocol_ready(app: AppHandle) -> Result<(), String> {
     protocol::ready(&app);
-    Ok(())
-}
-
-/// 设置页保存后调用：让系统登录项与 user.json 里的 open-at-login 对齐
-#[tauri::command]
-pub fn apply_auto_launch(app: AppHandle) -> Result<(), String> {
-    auto_launch::apply(&app);
-    Ok(())
-}
-
-/// 设置页保存「隐藏菜单栏」后调用：按 user.json 的 hide-app-menu
-/// 重新应用窗口装饰（原生标题栏，见 window::apply_hide_app_menu）
-#[tauri::command]
-pub fn apply_hide_app_menu(app: AppHandle) -> Result<(), String> {
-    window::apply_hide_app_menu(&app);
     Ok(())
 }
 
@@ -122,36 +100,25 @@ pub fn apply_upnp(app: AppHandle) -> Result<(), String> {
     Ok(())
 }
 
-/// 切换语言后重建菜单（前端 locale 变化时调用，只传语言值，菜单数据都在资源里）
+/// 读种子文件 -> 前端要的 `{ name, dataURL }`（裸 base64）
+///
+/// 前端菜单的「打开种子文件」用系统对话框选完文件后调它 —— 文件读取留在 Rust，
+/// 前端就不需要给 fs 插件开任意路径的读权限。
 #[tauri::command]
-pub fn rebuild_menus(app: AppHandle, locale: String) -> Result<(), String> {
-    menu::apply(&app, &locale)
+pub fn read_torrent_file(path: String) -> Result<serde_json::Value, String> {
+    ipc::torrent_payload(std::path::Path::new(&path))
 }
 
-/// 把渲染进程画好的「图标 + 上下行速率」PNG 换成托盘图标
-///（和原 Electron 版一致：canvas 在渲染进程画，这边只负责 setImage）
+/// 退出应用（等价原项目 `Application.quit`：先停引擎，再 `app.exit()`）
 #[tauri::command]
-pub fn set_tray_speedometer(app: AppHandle, png: Vec<u8>) -> Result<(), String> {
-    tray::set_speedometer(&app, &png)
+pub fn quit_app(app: AppHandle) {
+    ipc::quit_app(&app)
 }
 
-/// 恢复静态托盘图标（关掉「托盘显示实时速度」、组件卸载时由前端调用）
+/// 切换主窗口的开发者工具（App 菜单里的 help.toggle-dev-tools 用）
 #[tauri::command]
-pub fn reset_tray_icon(app: AppHandle) -> Result<(), String> {
-    tray::reset_icon(&app)
-}
-
-/// 「下载中」状态变化：Win/Linux 切换托盘 normal/active 图标（macOS 无视）
-#[tauri::command]
-pub fn set_tray_active(app: AppHandle, active: bool) {
-    tray::set_active(&app, active);
-}
-
-/// 设置页保存后调用：按最新的 user.json 重新应用运行模式
-#[tauri::command]
-pub fn apply_run_mode(app: AppHandle) -> Result<(), String> {
-    run_mode::apply_from_config(&app);
-    Ok(())
+pub fn toggle_devtools(app: AppHandle) {
+    ipc::toggle_dev_tools(&app)
 }
 
 #[tauri::command]

@@ -18,7 +18,6 @@
 
 <script>
 import { mapState } from 'vuex';
-import { invoke } from '@tauri-apps/api/core';
 
 import { getInverseTheme } from '@shared/utils';
 import { APP_THEME } from '@shared/constants';
@@ -70,7 +69,7 @@ export default {
   destroyed() {
     // 关掉「托盘显示实时速度」或退出时，把托盘恢复成静态图标
     // （原 Electron 版对应 TrayManager.handleSpeedometerEnableChange -> renderTray）
-    invoke('reset_tray_icon').catch((err) => {
+    window.application?.trayManager?.resetIcon().catch((err) => {
       console.warn('[Motr] reset tray icon fail:', err);
     });
   },

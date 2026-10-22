@@ -14,7 +14,11 @@ export default {
       this.unlisten = await listen('command', (event) => {
         console.log('ipc', event);
         const { command, args } = event.payload;
-        commands.execute(command, ...args);
+        if (Array.isArray(args)) {
+          commands.execute(command, ...args);
+        } else {
+          commands.execute(command);
+        }
       });
     },
     unbindIpcEvents() {
@@ -27,8 +31,10 @@ export default {
   async created() {
     await this.bindIpcEvents();
 
-    // 监听已就位，可以收命令了。通知 Rust 侧一声：冷启动时系统递过来的
-    // 协议链接（magnet: 等）在 src-tauri/src/protocol.rs 里先攒着，这里补发
+    // 监听已就位：前端 ProtocolManager 补发冷启动攒下的 deep link 命令；
+    // Rust 侧只负责 .torrent 文件关联，也保留自己的队列
+    window.application?.protocolManager?.ready();
+
     invoke('protocol_ready').catch((err) => {
       console.warn('[Motr] protocol ready fail:', err);
     });
