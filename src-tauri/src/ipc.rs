@@ -2,7 +2,7 @@ use std::path::Path;
 
 use base64::prelude::{BASE64_STANDARD, Engine as _};
 use serde_json::{Value, json};
-use tauri::{AppHandle, Emitter, Manager};
+use tauri::{AppHandle, Emitter};
 
 /// 把命令下发给前端：前端 `Ipc.vue` 收到后交给 CommandManager 执行
 ///
@@ -22,8 +22,8 @@ pub(crate) fn send_command_to_frontend(app: &AppHandle, command: &str, arg: Opti
 /// 读种子文件 -> 前端要的 `{ name, dataURL }`
 ///
 /// 与原项目一致：dataURL 是**裸 base64**（前端用 `base64StringToBlob` 还原成 File）。
-/// 调用方：前端菜单的「打开种子文件」，以及系统把 `.torrent` 递进来时
-/// （文件关联，见 `protocol::open_torrent_file`）。
+/// 调用方：系统把 `.torrent` 递进来时（文件关联，见 `protocol::open_torrent_path`）——
+/// 菜单里的「打开种子文件」由前端用 dialog + fs 插件自己读，不走这里。
 pub(crate) fn torrent_payload(path: &Path) -> Result<Value, String> {
     if !path
         .extension()
@@ -44,33 +44,4 @@ pub(crate) fn torrent_payload(path: &Path) -> Result<Value, String> {
         "name": name,
         "dataURL": BASE64_STANDARD.encode(&bytes),
     }))
-}
-
-/// 退出应用（等价原项目 `Application.quit`：先停引擎，再 `app.exit()`）
-pub(crate) fn quit_app(app: &AppHandle) {
-    log::info!("[Motr] quitting...");
-
-    // RunEvent::Exit 里也会再调一次 engine::stop（幂等，第二次是空操作），
-    // 这里显式先停，保证 aria2 在退出前就被收掉
-    crate::engine::stop(app);
-
-    app.exit(0);
-}
-
-/// 帮助菜单里的「切换开发者工具」（原项目用的是 Electron 的 toggledevtools role）
-///
-/// 依赖 Cargo.toml 里 tauri 的 `devtools` feature：
-/// 没开的话这些方法在 release 构建里不存在（debug 构建本来就有）。
-pub(crate) fn toggle_dev_tools(app: &AppHandle) {
-    let Some(window) = app.get_webview_window("main") else {
-        log::warn!("[Motr] 找不到主窗口，无法切换开发者工具");
-        return;
-    };
-
-    if window.is_devtools_open() {
-        window.close_devtools();
-    } else {
-        window.open_devtools();
-    }
-    log::info!("[Motr] devtools toggled");
 }

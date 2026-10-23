@@ -400,8 +400,6 @@
 
 <script>
 import { invoke } from '@tauri-apps/api/core';
-import { BaseDirectory, remove } from '@tauri-apps/plugin-fs';
-import { relaunch } from '@tauri-apps/plugin-process';
 import is from '@/utils/is';
 import { confirm } from '@/utils/dialog';
 import { mapState } from 'vuex';
@@ -667,25 +665,7 @@ export default {
           // 重置本身会把引擎连同任务一起清掉，暂停只是顺手做的
           this.$store.dispatch('task/pauseAllTask').finally(async () => {
             // 停引擎 → 删掉 download.session → 重新起引擎
-            //（原项目 Application.resetSession，见 src-tauri/src/engine.rs）
-            console.info('[Motr] reset session: invoking main process');
-            await window.application.stopEngine();
-            setTimeout(() => {
-              remove('download.session', {
-                baseDir: BaseDirectory.AppData,
-              }).catch((err) => {
-                console.info('[Motr] Removed the download seesion file: ', err);
-              });
-
-              window.application.engine.start();
-            }, 3000);
-            // invoke('reset_session')
-            //   .then(() => {
-            //     console.info('[Motr] reset session: accepted by main process');
-            //   })
-            //   .catch((err) => {
-            //     console.warn('[Motr] reset session fail:', err);
-            //   });
+            await window.application?.resetSession();
           });
         }
       });
@@ -700,20 +680,8 @@ export default {
         if (okClicked) {
           // 先把 aria2 会话落盘（未完成的任务不该被清掉，只清配置），
           // 再让主进程清空 user.json / system.json 并重启
-          //（原项目 Application 里的 application:factory-reset，见 src-tauri/src/commands.rs）
           this.$store.dispatch('task/saveSession').finally(async () => {
-            console.info('[Motr] factory reset: invoking main process');
-            await window.application.configManager.reset();
-            await relaunch();
-            // invoke('factory_reset')
-            //   .then(() => {
-            //     console.info(
-            //       '[Motr] factory reset: accepted, app will restart'
-            //     );
-            //   })
-            //   .catch((err) => {
-            //     console.warn('[Motr] factory reset fail:', err);
-            //   });
+            await window.application?.reset();
           });
         }
       });

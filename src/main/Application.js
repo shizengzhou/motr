@@ -1,11 +1,13 @@
 import { exit, setDockVisibility } from '@tauri-apps/api/app';
+import { invoke } from '@tauri-apps/api/core';
 import { emit } from '@tauri-apps/api/event';
 import { basename } from '@tauri-apps/api/path';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { info, warn } from '@tauri-apps/plugin-log';
 import { message, open } from '@/utils/dialog';
-import { readFile } from '@tauri-apps/plugin-fs';
+import { readFile, remove, BaseDirectory } from '@tauri-apps/plugin-fs';
 import { openUrl } from '@tauri-apps/plugin-opener';
+import { relaunch } from '@tauri-apps/plugin-process';
 import { Buffer } from 'buffer';
 import { EventEmitter } from 'events';
 import ConfigManager from './ConfigManager';
@@ -110,6 +112,8 @@ export default class Application extends EventEmitter {
     });
 
     this.on('application:quit', async () => {
+      // 退出流程开始：之后的关闭请求放行真关（对齐原项目 before-quit 里的 willQuit）
+      this.windowManager.willQuit = true;
       await exit(0);
     });
 
@@ -315,6 +319,53 @@ export default class Application extends EventEmitter {
         });
       }
     );
+  }
+
+  async reset() {
+    await this.configManager.reset();
+    await this.relaunch();
+  }
+
+  async resetSession() {
+    await this.stopEngine();
+
+    setTimeout(() => {
+      remove('download.session', {
+        baseDir: BaseDirectory.AppData,
+      }).catch((err) => {
+        console.info('[Motr] Removed the download seesion file: ', err);
+      });
+
+      this.engine.start();
+    }, 3000);
+  }
+
+  async relaunch() {
+    await this.stopAllSettled();
+    await relaunch();
+  }
+
+  stop() {
+    try {
+      const promises = [
+        this.stopEngine(),
+        this.shutdownUPnPManager(),
+        // this.energyManager.stopPowerSaveBlocker(),
+        this.trayManager.destroy(),
+      ];
+
+      return promises;
+    } catch (err) {
+      warn(`[Motr] stop error: ${err.message}`);
+    }
+  }
+
+  async stopAllSettled() {
+    await Promise.allSettled(this.stop());
+  }
+
+  async shutdownUPnPManager() {
+    await invoke('shutdown_upnp');
   }
 
   async sendCommandToAll(command, ...args) {

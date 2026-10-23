@@ -1,7 +1,5 @@
 mod commands;
 mod config_manager;
-mod context;
-mod engine;
 mod ipc;
 mod logging;
 mod protocol;
@@ -12,12 +10,7 @@ use std::sync::Mutex;
 
 use tauri::RunEvent;
 
-use crate::engine::EngineChild;
-use commands::{
-    apply_upnp,
-    factory_reset, get_app_config, protocol_ready, quit_app, read_torrent_file, relaunch,
-    reset_session, save_config, toggle_devtools, trash_item,
-};
+use commands::{apply_upnp, protocol_ready, shutdown_upnp, trash_item};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -49,7 +42,6 @@ pub fn run() {
                 .build(),
         )
         .plugin(tauri_plugin_clipboard_manager::init())
-        .manage(EngineChild::default())
         // UPnP：已建好的映射 + 缓存的网关（见 upnp.rs）
         .manage(Mutex::new(upnp::UpnpState::default()))
         // 下载协议：前端就绪前攒下的协议链接（见 protocol.rs）
@@ -57,12 +49,11 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_single_instance::init(|app, args, cwd| {
-            // 再启动一次时把已有窗口显示出来（原项目 second-instance -> showPage）。
             // 参数里若带 `magnet:...`，single-instance 插件（开了 deep-link feature）
             // 会先转给 deep-link 插件，由前端 ProtocolManager 的 onOpenUrl 接住；
             // 剩下的交给 handle_open_args —— Windows/Linux 的文件关联就是
-            // 「`Motr xxx.torrent`」这种命令行参数（macOS 走 RunEvent::Opened）
-            // window::show_main_window(app);
+            // 「`Motr xxx.torrent`」这种命令行参数（macOS 走 RunEvent::Opened）。
+            // 窗口显示由前端负责（main.js 启动即 showWindow），这里不用管
             protocol::handle_open_args(app, args, &cwd);
         }))
         // 「下载协议」：scheme 的声明在 tauri.conf.json 的 plugins.deep-link
@@ -76,16 +67,9 @@ pub fn run() {
         // 点击动作也由前端分发，Rust 不再注册全局菜单事件处理
         .invoke_handler(tauri::generate_handler![
             trash_item,
-            get_app_config,
-            save_config,
-            read_torrent_file,
-            quit_app,
-            toggle_devtools,
             apply_upnp,
             protocol_ready,
-            reset_session,
-            factory_reset,
-            relaunch
+            shutdown_upnp
         ])
         .setup(|app| {
             let handle = app.handle().clone();
@@ -104,37 +88,8 @@ pub fn run() {
             // 「隐藏菜单栏」→ 窗口装饰（原生标题栏）由前端 WindowManager.applyHideAppMenu
             // 在窗口显示之前应用，避免闪一下原生标题栏
 
-            // 窗口在 tauri.conf.json 里设的是 visible: false，这里决定要不要显示：
-            // 托盘应用模式不显示；本次是被「开机自启」拉起时也不显示
-            // （后者对应原项目 showPage 里的 `hidden: openedAtLogin || autoHideWindow`）
-            //
-            // 例外：用户主动重启（设置里改端口要重启、装完更新要重启）时窗口必须出现 ——
-            // 上面两条判断都不该拦住它。标记由 `commands::relaunch` 在重启前写下。
-            //
-            // 注意这里只负责"可见"：聚焦要等应用真正跑起来（见事件循环里的
-            // `RunEvent::Ready`）—— `setup` 本身就是 Tauri 在 `RunEvent::Ready`
-            // 内部同步调的，那一刻 `set_focus()` 常常不算数
-            // let focus_after_restart = window::take_focus_after_restart(&handle);
-
-            // if focus_after_restart {
-            //     // 用 warn 级：release 构建里 log 的编译期等级会把 info 整条编掉
-            //     log::warn!("[Motr] 检测到主动重启标记：本次启动会显示窗口并在就绪后聚焦");
-            //     window::show_main_window(&handle);
-            // } else if let Some(window) = handle.get_webview_window("main") {
-            //     let visible = run_mode::window_visible_at_startup(run_mode)
-            //         && !auto_launch::opened_at_login();
-
-            //     let _ = if visible {
-            //         window.show()
-            //     } else {
-            //         window.hide()
-            //     };
-            // }
-
-            // App 菜单和托盘由前端在 webview 就绪后创建（MenuManager / TrayManager）
-
-            // 窗口行为：开了「自动隐藏窗口」就失焦即隐藏
-            // window::init(&handle);
+            // 窗口显隐 / 聚焦由前端负责：main.js 在应用初始化完成后无条件 showWindow()
+            //（含 setFocus），重启后同样走这条路，不需要 Rust 侧的标记文件
 
             // Deep Link（magnet: / mo: 等）的注册与监听由前端 ProtocolManager
             // 负责；Rust 只处理器命令行 / RunEvent::Opened 递进来的 .torrent 文件。
@@ -157,42 +112,11 @@ pub fn run() {
             upnp::apply(&handle);
             upnp::spawn_renewal_task(&handle);
 
-            // let mut config = get_app_config(handle.clone())?;
-
-            // if let Err(e) = engine::start(&handle, &config) {
-            //     handle
-            //         .dialog()
-            //         .message(format!("Application startup failed: {e}"))
-            //         .kind(MessageDialogKind::Error)
-            //         .title("System Error")
-            //         .show(move |result| match result {
-            //             true => handle.exit(0),
-            //             false => {}
-            //         });
-            // }
-
             Ok(())
         })
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
         .run(|app, event| match event {
-            // 应用就绪：这里才是"重启后补聚焦"的正确时机。
-            //
-            // 为什么不在 setup 里一次做完：`setup` 是 Tauri 在 `RunEvent::Ready`
-            // 内部同步调的，那一刻窗口刚创建、应用还没激活，`set_focus()` 不算数；
-            // 而且 macOS 14+ 起 `activateIgnoringOtherApps:` 被系统忽略（协作式激活），
-            // 自我重启的新进程需要主动调用现代 API 才能到前台 —— 具体见 window.rs 的
-            // `activate_app` / `focus_main_window_until_focused`（后者按 400ms 重试，
-            // 直到窗口真的拿到焦点为止，拿到就收手）
-            // RunEvent::Ready => {
-            //     if window::focus_after_restart_pending() {
-            //         window::focus_main_window_until_focused(app);
-            //     }
-            // }
-            // 进入退出流程：之后的关闭请求要放行（原项目 before-quit 里的 willQuit）
-            // RunEvent::ExitRequested { .. } => {
-            //     window::mark_quitting();
-            // }
             RunEvent::Exit => {
                 // 退出前尽力撤销路由器上的端口映射（同步跑完，见 upnp.rs）
                 upnp::shutdown(app);
@@ -205,8 +129,8 @@ pub fn run() {
             // 系统把文件交给我们：双击 `.torrent`（或 `open -a Motr xxx.torrent`）。
             // macOS/iOS/Android 走这个事件，urls 是 file:// 形式，交给 protocol
             // 按"和菜单打开种子文件一样"的方式处理。
-            // 注意：Windows / Linux 的关联是走命令行参数（首次启动在 std::env::args，
-            // 再次启动由 single-instance 插件回调收到），这条还没接。
+            // 注意：Windows / Linux 的关联走命令行参数（首次启动在 std::env::args，
+            // 再次启动由 single-instance 插件回调收到）
             #[cfg(any(target_os = "macos", target_os = "ios", target_os = "android"))]
             RunEvent::Opened { urls } => {
                 protocol::handle_file_urls(app, urls);

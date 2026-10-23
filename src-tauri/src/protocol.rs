@@ -15,8 +15,9 @@
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
-use serde_json::{Value, json};
+use serde_json::Value;
 use tauri::{AppHandle, Manager};
+#[cfg(any(target_os = "macos", target_os = "ios", target_os = "android"))]
 use url::Url;
 
 use crate::{ipc, window};
@@ -39,6 +40,10 @@ fn with_state<T>(app: &AppHandle, action: impl FnOnce(&mut ProtocolState) -> T) 
 }
 
 /// 处理 `RunEvent::Opened` 里的文件 URL；非文件 URL 交给前端 Deep Link
+///
+/// 只在这些平台编译：调用方是 lib.rs 里同样 cfg 门控的 `RunEvent::Opened`
+///（Windows / Linux 的文件关联走命令行参数，见 `handle_open_args`）
+#[cfg(any(target_os = "macos", target_os = "ios", target_os = "android"))]
 pub fn handle_file_urls(app: &AppHandle, urls: impl IntoIterator<Item = Url>) {
     for url in urls {
         if url.scheme() != "file" {
@@ -51,6 +56,7 @@ pub fn handle_file_urls(app: &AppHandle, urls: impl IntoIterator<Item = Url>) {
 }
 
 /// 双击（或 `open -a`）`.torrent` 时系统把文件交给我们
+#[cfg(any(target_os = "macos", target_os = "ios", target_os = "android"))]
 fn open_torrent_file(app: &AppHandle, url: &Url) {
     let path = match url.to_file_path() {
         Ok(path) => path,

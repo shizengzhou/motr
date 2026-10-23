@@ -19,7 +19,31 @@ export default class WindowManager extends EventEmitter {
     this.application = options.application || null;
     this.window = getCurrentWindow();
 
+    // 是否已进入退出流程（对齐原项目 WindowManager 的 willQuit）：
+    // 置位后关闭请求放行真关，这样退出菜单 / ⌘Q 才能退掉
+    this.willQuit = false;
+
     this.onFocusChanged();
+    this.bindCloseToHide();
+  }
+
+  /// 点关闭按钮 = 隐藏窗口，不退出（对齐原项目 WindowManager.handleWindowClose：
+  /// index 页写死 bindCloseToHide，只有 willQuit 时才真关）
+  bindCloseToHide() {
+    this.window.onCloseRequested(async (event) => {
+      if (this.willQuit) {
+        return;
+      }
+
+      event.preventDefault();
+
+      // 全屏时先退出全屏再隐藏（原项目同一处逻辑）
+      if (await this.window.isFullscreen()) {
+        await this.window.setFullscreen(false);
+      }
+
+      await this.window.hide();
+    });
   }
 
   onFocusChanged() {

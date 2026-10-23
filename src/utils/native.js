@@ -64,20 +64,13 @@ const ensureNotificationPermission = () => {
 };
 
 /**
- * 重启应用。等价原项目 `Application.relaunch()`（先 `stopAllSettled()` 停引擎、
- * 再 `app.relaunch()` + `exit`）：这里先把 aria2 会话落盘，再交给 Rust 侧的
- * `commands::relaunch` —— 它会**先停掉引擎**再重启，新进程用新的配置重新起引擎。
- *
- * 注意不要直接用 process 插件的 `relaunch()`：`app.restart()` 内部只做
- * `cleanup_before_exit()`，**不会**发 `RunEvent::Exit`，shell 插件收不到 aria2
- * 子进程，会留下一个占着 RPC 端口的孤儿引擎（新引擎起不来、界面却连着旧的）。
- *
  * 用在「改完必须重启才生效」的设置上（`needRestartKeys`：RPC 端口/密钥、
  * 监听端口、隐藏应用菜单）。
  */
 export const restartApp = async () => {
   await store.dispatch('task/saveSession');
-  await invoke('relaunch');
+  await window.application.relaunch();
+  // await invoke('relaunch');
 };
 
 export const showNotification = async ({ title, body }) => {
