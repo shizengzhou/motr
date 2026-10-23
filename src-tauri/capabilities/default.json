@@ -7,13 +7,28 @@
   ],
   "permissions": [
     "core:default",
+    "autostart:default",
+    "deep-link:default",
+    "deep-link:allow-register",
+    "deep-link:allow-unregister",
+    "deep-link:allow-is-registered",
+    "core:app:allow-app-show",
+    "core:app:allow-exit",
+    "core:app:allow-set-dock-visibility",
     "core:window:default",
+    "core:window:allow-show",
+    "core:window:allow-unminimize",
+    "core:window:allow-set-focus",
+    "core:window:allow-hide",
     "core:window:allow-close",
     "core:window:allow-minimize",
     "core:window:allow-toggle-maximize",
     "core:window:allow-unmaximize",
     "core:window:allow-maximize",
     "core:window:allow-start-dragging",
+    "core:window:allow-set-theme",
+    "core:window:allow-set-size",
+    "core:window:allow-set-decorations",
     "core:window:allow-set-progress-bar",
     "core:window:allow-set-badge-label",
     "opener:default",
@@ -26,10 +41,46 @@
     "process:default",
     {
       "identifier": "http:default",
-      "allow": [{ "url": "https://*" }, { "url": "http://*" }]
+      "allow": [
+        {
+          "url": "https://*"
+        },
+        {
+          "url": "http://*"
+        }
+      ]
     },
     "store:default",
     "shell:default",
-    "clipboard-manager:allow-read-text"
+    "shell:allow-kill",
+    {
+      "identifier": "shell:allow-spawn",
+      "allow": [
+        {
+          "name": "binaries/aria2c",
+          "sidecar": true,
+          "args": true
+        }
+      ]
+    },
+    "clipboard-manager:allow-read-text",
+    "log:default",
+    "fs:default",
+    {
+      "identifier": "fs:allow-write-text-file",
+      "allow": [
+        {
+          "path": "$APPDATA/engine.pid"
+        }
+      ]
+    },
+    {
+      "identifier": "fs:allow-remove",
+      "allow": [
+        {
+          "path": "$APPDATA/engine.pid"
+        }
+      ]
+    }
   ]
 }

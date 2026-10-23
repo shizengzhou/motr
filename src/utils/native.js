@@ -16,7 +16,7 @@ import store from '@/store';
 import { Message } from 'element-ui';
 
 import { isMagnetTask, getFileNameFromFile } from '@shared/utils';
-import { APP_THEME, TASK_STATUS } from '@shared/constants';
+import { TASK_STATUS } from '@shared/constants';
 
 export const showItemInFolder = (fullPath, { errorMsg }) => {
   if (!fullPath) {
@@ -64,20 +64,13 @@ const ensureNotificationPermission = () => {
 };
 
 /**
- * 重启应用。等价原项目 `Application.relaunch()`（先 `stopAllSettled()` 停引擎、
- * 再 `app.relaunch()` + `exit`）：这里先把 aria2 会话落盘，再交给 Rust 侧的
- * `commands::relaunch` —— 它会**先停掉引擎**再重启，新进程用新的配置重新起引擎。
- *
- * 注意不要直接用 process 插件的 `relaunch()`：`app.restart()` 内部只做
- * `cleanup_before_exit()`，**不会**发 `RunEvent::Exit`，shell 插件收不到 aria2
- * 子进程，会留下一个占着 RPC 端口的孤儿引擎（新引擎起不来、界面却连着旧的）。
- *
  * 用在「改完必须重启才生效」的设置上（`needRestartKeys`：RPC 端口/密钥、
  * 监听端口、隐藏应用菜单）。
  */
 export const restartApp = async () => {
   await store.dispatch('task/saveSession');
-  await invoke('relaunch');
+  await window.application.relaunch();
+  // await invoke('relaunch');
 };
 
 export const showNotification = async ({ title, body }) => {
@@ -168,19 +161,7 @@ export const moveTaskFilesToTrash = async (task) => {
 };
 
 export const getSystemTheme = async () => {
-  const theme = await getCurrentWindow().theme();
-  return theme === 'dark' ? APP_THEME.DARK : APP_THEME.LIGHT;
-};
-
-/**
- * 订阅系统主题变化（preference 里 theme 设为 auto 时用它跟随系统）。
- * Tauri 侧对应的事件是 tauri://theme-changed，payload 为 'light' / 'dark'。
- * 返回取消监听的函数。
- */
-export const onSystemThemeChange = (handler) => {
-  return getCurrentWindow().onThemeChanged(({ payload }) => {
-    handler(payload === 'dark' ? APP_THEME.DARK : APP_THEME.LIGHT);
-  });
+  return await getCurrentWindow().theme();
 };
 
 export const delayDeleteTaskFiles = (task, delay) => {

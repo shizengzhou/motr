@@ -1,8 +1,6 @@
 import { isEmpty, clone } from 'lodash';
-import { invoke } from '@tauri-apps/api/core';
 import { emit } from '@tauri-apps/api/event';
 import is from '@/utils/is';
-import { aria2ProxyOptions } from '@/utils/proxy';
 import { Aria2 } from '@shared/aria2';
 import {
   separateConfig,
@@ -12,20 +10,19 @@ import {
   changeKeysToCamelCase,
   changeKeysToKebabCase,
 } from '@shared/utils';
-import { toElectronLocale } from '../utils';
 import { ENGINE_RPC_HOST } from '../shared/constants';
 
 export default class Api {
   constructor(options = {}) {
     this.options = options;
 
-    this.init();
+    // this.init();
   }
 
-  async init() {
-    this.config = await this.loadConfig();
+  async init(config) {
+    // this.config = await this.loadConfig();
 
-    this.client = this.initClient();
+    this.client = this.initClient(config);
     this.client.open();
   }
 
@@ -36,8 +33,21 @@ export default class Api {
   }
 
   async loadConfigFromNativeStore() {
-    const result = await invoke('get_app_config');
-    return { ...result, locale: toElectronLocale(result.locale) };
+    const result = await this.getAppConfig();
+    return result;
+  }
+
+  async getAppConfig() {
+    const configManager = window.application.configManager;
+    const systemConfig = await configManager.getSystemConfig();
+    const userConfig = await configManager.getUserConfig();
+    const context = window.application.context.get();
+
+    return {
+      ...systemConfig,
+      ...userConfig,
+      ...context,
+    };
   }
 
   async loadConfig() {
@@ -49,8 +59,8 @@ export default class Api {
     return result;
   }
 
-  initClient() {
-    const { rpcListenPort: port, rpcSecret: secret } = this.config;
+  initClient(config) {
+    const { rpcListenPort: port, rpcSecret: secret } = config;
     const host = ENGINE_RPC_HOST;
     return new Aria2({
       host,
@@ -71,10 +81,7 @@ export default class Api {
   }
 
   fetchPreference() {
-    return new Promise((resolve) => {
-      this.config = this.loadConfig();
-      resolve(this.config);
-    });
+    return this.loadConfig();
   }
 
   savePreference(params = {}) {
@@ -91,36 +98,30 @@ export default class Api {
   }
 
   async savePreferenceToNativeStore(params = {}) {
-    // 代理：把 proxy 映射成 aria2 的 all-proxy/no-proxy 一起下发
-    //（原项目 Application.watchProxyChange 做的是同一件事），这样运行中的引擎立刻跟着变，
-    // system.json 里也留下同一份值
-    if (params.proxy) {
-      Object.assign(params, aria2ProxyOptions(params.proxy));
-    }
-
     const { user, system, others } = separateConfig(params);
 
     if (!isEmpty(user)) {
       console.info('[Motr] save user config: ', user);
+      await Promise.all(
+        Object.entries(user).map(([key, value]) =>
+          window.application.configManager.userConfig.set(key, value)
+        )
+      );
     }
 
     if (!isEmpty(system)) {
       console.info('[Motr] save system config: ', system);
       this.updateActiveTaskOption(system);
+      await Promise.all(
+        Object.entries(system).map(([key, value]) =>
+          window.application.configManager.systemConfig.set(key, value)
+        )
+      );
+      this.changeGlobalOption(system);
     }
 
     if (!isEmpty(others)) {
       console.info('[Motr] save config found illegal key: ', others);
-    }
-
-    // 落盘统一交给 Rust（它是 user.json / system.json 的唯一写入者）：
-    // 前端直接用 LazyStore 写文件的话，Rust 侧的 store 缓存会变旧 —— 读不到新值，
-    // 而且退出时 tauri-plugin-store 会把旧缓存写回文件（"改完设置要重启才生效"
-    // 和 "last-check-update-time 推不动" 都是这么来的，见 config_manager::write_keys）
-    await invoke('save_config', { user, system });
-
-    if (!isEmpty(system)) {
-      this.changeGlobalOption(system);
     }
 
     if (!isEmpty(system) || !isEmpty(user)) {

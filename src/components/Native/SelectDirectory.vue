@@ -5,7 +5,7 @@
 </template>
 
 <script>
-import { open } from '@tauri-apps/plugin-dialog';
+import { open } from '@/utils/dialog';
 import '@/components/Icons/folder';
 
 export default {

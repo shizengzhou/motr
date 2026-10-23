@@ -12,7 +12,6 @@ import {
   buildUriPayload,
   buildTorrentPayload,
 } from '@/utils/task';
-import { checkForUpdates } from '@/utils/updater';
 
 const i18n = getLocaleManager().getI18n();
 
@@ -179,7 +178,7 @@ commands.register('application:about', showAboutPanel);
 
 // 应用菜单 + 托盘菜单里的「检查更新」（menus/*.json 里 command 就是这个）
 const checkUpdate = () => {
-  checkForUpdates({ userCheck: true });
+  window.application?.updateManager?.checkForUpdates({ userCheck: true });
 };
 
 commands.register('application:check-for-updates', checkUpdate);

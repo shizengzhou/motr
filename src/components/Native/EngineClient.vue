@@ -4,7 +4,6 @@
 
 <script>
 import { mapState } from 'vuex';
-import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWindow, ProgressBarStatus } from '@tauri-apps/api/window';
 import is from '@/utils/is';
 import api from '@/api';
@@ -65,12 +64,10 @@ export default {
   },
   watch: {
     downloading(val, oldVal) {
-      // 原版发 'download-status-change' 事件给主进程（Application 转给
-      // TrayManager.handleDownloadStatusChange，切换托盘 normal/active 图标）；
-      // 这里直接 invoke 对面的 set_tray_active。守卫与原版一致：
-      // watcher 本身只在值变化时触发，val !== oldVal 是原版的写法
+      // 原版发 'download-status-change' 事件给主进程（TrayManager 切换
+      // normal/active 图标）。托盘现在由前端管理，直接调 TrayManager。
       if (val !== oldVal && this.isRenderer) {
-        invoke('set_tray_active', { active: val }).catch((err) => {
+        window.application?.trayManager?.setActive(val).catch((err) => {
           console.warn('[Motr] update tray active icon fail:', err);
         });
       }

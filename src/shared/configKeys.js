@@ -1,4 +1,5 @@
 const userKeys = [
+  'all-proxy-backup',
   'auto-check-update',
   'auto-hide-window',
   'auto-sync-tracker',
@@ -19,7 +20,6 @@ const userKeys = [
   'no-confirm-before-delete-task',
   'open-at-login',
   'protocols',
-  'proxy',
   'resume-all-when-app-launched',
   'run-mode',
   'show-progress-bar',
@@ -27,6 +27,7 @@ const userKeys = [
   'theme',
   'tracker-source',
   'tray-speedometer',
+  'use-proxy',
 ];
 
 const systemKeys = [

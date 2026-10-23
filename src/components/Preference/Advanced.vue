@@ -48,22 +48,22 @@
           :label-width="formLabelWidth"
         >
           <el-switch
-            v-model="form.proxy.enable"
+            v-model="form.useProxy"
             :active-text="$t('preferences.enable-proxy')"
-            @change="onProxyEnableChange"
+            @change="onUseProxyChange"
           >
           </el-switch>
         </el-form-item>
         <el-form-item
           :label-width="formLabelWidth"
-          v-if="form.proxy.enable"
+          v-if="form.useProxy"
           style="margin-top: -16px"
         >
           <el-col class="form-item-sub" :xs="24" :sm="20" :md="16" :lg="16">
             <el-input
               placeholder="[http://][USER:PASSWORD@]HOST[:PORT]"
-              @change="onProxyServerChange"
-              v-model="form.proxy.server"
+              @change="onAllProxyBackupChange"
+              v-model="form.allProxyBackup"
             >
             </el-input>
           </el-col>
@@ -72,21 +72,10 @@
               type="textarea"
               rows="2"
               auto-complete="off"
-              @change="handleProxyBypassChange"
               :placeholder="`${$t('preferences.proxy-bypass-input-tips')}`"
-              v-model="form.proxy.bypass"
+              v-model="form.noProxy"
             >
             </el-input>
-          </el-col>
-          <el-col class="form-item-sub" :xs="24" :sm="24" :md="20" :lg="20">
-            <el-select class="proxy-scope" v-model="form.proxy.scope" multiple>
-              <el-option
-                v-for="item in proxyScopeOptions"
-                :key="item"
-                :label="$t(`preferences.proxy-scope-${item}`)"
-                :value="item"
-              />
-            </el-select>
             <div class="el-form-item__info" style="margin-top: 8px">
               <a
                 target="_blank"
@@ -401,17 +390,18 @@
         <el-button type="primary" @click="submitForm('advancedForm')">
           {{ $t('preferences.save') }}
         </el-button>
-        <el-button @click="resetForm('advancedForm')">
+        <!-- <el-button @click="resetForm('advancedForm')">
           {{ $t('preferences.discard') }}
-        </el-button>
+        </el-button> -->
       </div>
     </el-main>
   </el-container>
 </template>
 
 <script>
+import { invoke } from '@tauri-apps/api/core';
 import is from '@/utils/is';
-import { confirm } from '@tauri-apps/plugin-dialog';
+import { confirm } from '@/utils/dialog';
 import { mapState } from 'vuex';
 import { cloneDeep, extend, isEmpty } from 'lodash';
 import randomize from 'randomatic';
@@ -424,7 +414,6 @@ import {
   ENGINE_RPC_PORT,
   LOG_LEVELS,
   TRACKER_SOURCE_OPTIONS,
-  PROXY_SCOPE_OPTIONS,
 } from '@shared/constants';
 import {
   buildRpcUrl,
@@ -446,12 +435,12 @@ import '@/components/Icons/sync';
 import '@/components/Icons/refresh';
 import { getLanguage } from '@shared/locales';
 import { getLocaleManager } from '@/components/Locale';
-import { checkForUpdates } from '@/utils/updater';
 import { restartApp } from '@/utils/native';
-import { invoke } from '@tauri-apps/api/core';
 
 const initForm = (config) => {
   const {
+    allProxy,
+    allProxyBackup,
     autoCheckUpdate,
     autoSyncTracker,
     btTracker,
@@ -462,8 +451,8 @@ const initForm = (config) => {
     lastSyncTrackerTime,
     listenPort,
     logLevel,
+    noProxy,
     protocols,
-    proxy,
     rpcListenPort,
     rpcSecret,
     trackerSource,
@@ -471,6 +460,10 @@ const initForm = (config) => {
     userAgent,
   } = config;
   const result = {
+    // 全局代理：all-proxy / no-proxy 在 system.json，use-proxy /
+    // all-proxy-backup 在 user.json（与原版一致）
+    allProxy,
+    allProxyBackup,
     autoCheckUpdate,
     autoSyncTracker,
     btTracker: convertCommaToLine(btTracker),
@@ -481,7 +474,7 @@ const initForm = (config) => {
     lastSyncTrackerTime,
     listenPort,
     logLevel,
-    proxy: cloneDeep(proxy),
+    noProxy: convertCommaToLine(noProxy),
     protocols: { ...protocols },
     rpcListenPort,
     rpcSecret,
@@ -502,14 +495,13 @@ export default {
     const { locale } = this.$store.state.preference.config;
     const formOriginal = initForm(this.$store.state.preference.config);
     let form = {};
-    form = initForm(extend(form, formOriginal, changedConfig.advanced));
+    form = initForm(extend(form, formOriginal));
 
     return {
       form,
       formLabelWidth: calcFormLabelWidth(locale),
       formOriginal,
       hideRpcSecret: true,
-      proxyScopeOptions: PROXY_SCOPE_OPTIONS,
       rules: {},
       trackerSourceOptions: TRACKER_SOURCE_OPTIONS,
       trackerSyncing: false,
@@ -576,7 +568,9 @@ export default {
     async onCheckUpdateClick() {
       this.$msg.info(this.$t('app.checking-for-updates'));
 
-      await checkForUpdates({ userCheck: true });
+      await window.application?.updateManager?.checkForUpdates({
+        userCheck: true,
+      });
 
       // 检查流程会写 last-check-update-time，回来后再读一次填到表单
       const config = await this.$store.dispatch('preference/fetchPreference');
@@ -604,29 +598,13 @@ export default {
         [protocol]: enabled,
       };
     },
-    onProxyEnableChange(enable) {
-      this.form.proxy = {
-        ...this.form.proxy,
-        enable,
-      };
+    // 开关只改 system.json 里的 all-proxy：关掉时清空，备份留在 user.json
+    onUseProxyChange(flag) {
+      this.form.allProxy = flag ? this.form.allProxyBackup : '';
     },
-    onProxyServerChange(server) {
-      this.form.proxy = {
-        ...this.form.proxy,
-        server,
-      };
-    },
-    handleProxyBypassChange(bypass) {
-      this.form.proxy = {
-        ...this.form.proxy,
-        bypass: convertLineToComma(bypass),
-      };
-    },
-    onProxyScopeChange(scope) {
-      this.form.proxy = {
-        ...this.form.proxy,
-        scope: [...scope],
-      };
+    // 编辑代理地址时同步更新真正生效的 all-proxy
+    onAllProxyBackupChange(value) {
+      this.form.allProxy = value;
     },
     changeUA(type) {
       const ua = userAgentMap[type];
@@ -685,17 +663,9 @@ export default {
           this.$store.dispatch('task/purgeTaskRecord');
           // 用 finally 而不是 then：暂停失败也不能把重置吞掉 ——
           // 重置本身会把引擎连同任务一起清掉，暂停只是顺手做的
-          this.$store.dispatch('task/pauseAllTask').finally(() => {
+          this.$store.dispatch('task/pauseAllTask').finally(async () => {
             // 停引擎 → 删掉 download.session → 重新起引擎
-            //（原项目 Application.resetSession，见 src-tauri/src/engine.rs）
-            console.info('[Motr] reset session: invoking main process');
-            invoke('reset_session')
-              .then(() => {
-                console.info('[Motr] reset session: accepted by main process');
-              })
-              .catch((err) => {
-                console.warn('[Motr] reset session fail:', err);
-              });
+            await window.application?.resetSession();
           });
         }
       });
@@ -710,18 +680,8 @@ export default {
         if (okClicked) {
           // 先把 aria2 会话落盘（未完成的任务不该被清掉，只清配置），
           // 再让主进程清空 user.json / system.json 并重启
-          //（原项目 Application 里的 application:factory-reset，见 src-tauri/src/commands.rs）
-          this.$store.dispatch('task/saveSession').finally(() => {
-            console.info('[Motr] factory reset: invoking main process');
-            invoke('factory_reset')
-              .then(() => {
-                console.info(
-                  '[Motr] factory reset: accepted, app will restart'
-                );
-              })
-              .catch((err) => {
-                console.warn('[Motr] factory reset fail:', err);
-              });
+          this.$store.dispatch('task/saveSession').finally(async () => {
+            await window.application?.reset();
           });
         }
       });
@@ -744,7 +704,7 @@ export default {
           ...changedConfig.basic,
         };
 
-        const { btAutoDownloadContent, btTracker } = data;
+        const { btAutoDownloadContent, btTracker, noProxy } = data;
 
         if ('btAutoDownloadContent' in data) {
           data.followTorrent = btAutoDownloadContent;
@@ -754,6 +714,11 @@ export default {
 
         if (btTracker) {
           data.btTracker = reduceTrackerString(convertLineToComma(btTracker));
+        }
+
+        // 代理白名单：表单里一行一个，store/aria2 要逗号分隔
+        if (noProxy) {
+          data.noProxy = convertLineToComma(noProxy);
         }
 
         // 三个监听端口都过一遍：空值/越界/非数字会让 Rust 侧的 u16 反序列化失败，
@@ -803,9 +768,7 @@ export default {
             // 默认客户端，或取消注册（见 src-tauri/src/protocol.rs）。
             // 这个开关不在 needRestartKeys 里，所以要即时通知
             if ('protocols' in data) {
-              invoke('apply_protocols').catch((err) => {
-                console.warn('[Motr] apply protocols fail:', err);
-              });
+              window.application?.protocolManager?.apply(data.protocols);
             }
           })
           .catch(() => {
@@ -856,9 +819,6 @@ export default {
 </script>
 
 <style lang="scss">
-.proxy-scope {
-  width: 100%;
-}
 .bt-tracker {
   position: relative;
   .sync-tracker-btn {

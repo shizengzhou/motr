@@ -5,8 +5,6 @@ import { sync } from 'vuex-router-sync';
 import Element, { Loading, Message } from 'element-ui';
 import axios from 'axios';
 
-import { invoke } from '@tauri-apps/api/core';
-
 import App from './App.vue';
 import is from '@/utils/is';
 import router from '@/router';
@@ -24,19 +22,16 @@ import { commands } from '@/components/CommandManager/instance';
 // 因为动态导入在 $mount 之后才被触发）。
 import './commands';
 import TrayWorker from '@/workers/tray.worker?worker';
-import { checkForUpdates } from '@/utils/updater';
-import {
-  APP_RUN_MODE,
-  AUTO_CHECK_UPDATE_INTERVAL,
-  AUTO_SYNC_TRACKER_INTERVAL,
-} from '@shared/constants';
-import { checkIsNeedRun } from '@shared/utils';
+import { APP_RUN_MODE, AUTO_SYNC_TRACKER_INTERVAL } from '@shared/constants';
+import { checkIsNeedRun, changeKeysToCamelCase } from '@shared/utils';
 import {
   convertTrackerDataToComma,
   reduceTrackerString,
 } from '@shared/utils/tracker';
 
 import '@/components/Theme/Index.scss';
+import Application from '../../main/Application';
+import api from '../../api';
 
 // 速率计是否该生效：与 App.vue 的 enableTraySpeedometer 同一套判断。
 // 关开关时组件会卸载（并恢复静态图标），但 worker 里可能还有一次「已画完」
@@ -63,9 +58,9 @@ const updateTray = is.isTauri()
       const buffer = await tray.arrayBuffer();
 
       try {
-        await invoke('set_tray_speedometer', {
-          png: Array.from(new Uint8Array(buffer)),
-        });
+        await window.application?.trayManager?.setSpeedometer(
+          new Uint8Array(buffer)
+        );
       } catch (err) {
         console.warn('[Motr] update tray speedometer fail:', err);
       }
@@ -99,10 +94,6 @@ function initTrayWorker() {
 }
 
 function init(config) {
-  // if (is.renderer()) {
-  //   Vue.use(require('vue-electron'));
-  // }
-
   Vue.http = Vue.prototype.$http = axios;
   Vue.config.productionTip = false;
 
@@ -171,27 +162,25 @@ const syncBtTrackers = (source) => {
     });
 };
 
-Promise.all([
-  store.dispatch('preference/fetchPreference'),
-  // 读一次系统主题 + 订阅后续变化（theme=auto 时跟随系统）
-  store.dispatch('app/initSystemTheme'),
-])
-  .then(([config]) => {
-    console.info('[Motr] load preference:', config);
-    init(config);
+const application = new Application();
+window.application = application;
 
-    // 「自动检查更新」：等价原项目 Application.initUpdaterManager 里那句
-    // checkIsNeedRun(auto-check-update, last-check-update-time, AUTO_CHECK_UPDATE_INTERVAL)。
-    // 自动检查不带 userCheck，所以「已是最新」不弹框，只有真有更新才问。
-    if (
-      checkIsNeedRun(
-        config.autoCheckUpdate,
-        config.lastCheckUpdateTime,
-        AUTO_CHECK_UPDATE_INTERVAL
-      )
-    ) {
-      checkForUpdates();
-    }
+application
+  .init()
+  .then(async () => {
+    let config = await api.getAppConfig();
+    config = changeKeysToCamelCase(config);
+    console.info('[Motr] load preference:', config);
+
+    // 与原项目保持一致，首次即使是 Tray 模式也显示窗口
+    // if (config.runMode !== APP_RUN_MODE.TRAY) {
+    application.windowManager.showWindow();
+    // }
+    application.updateManager.check(config);
+
+    store.dispatch('preference/updatePreference', config);
+    api.init(config);
+    init(config);
 
     // 「自动同步 Tracker」：等价原项目 Application.autoSyncTrackers（间隔 12 小时）。
     // 原项目先等 500ms，让启动期的其它请求先过去，这里保持一致

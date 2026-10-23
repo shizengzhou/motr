@@ -19,6 +19,10 @@ const lightTextColor = '#000';
 const darkTextColor = '#fff';
 const baseWidth = TRAY_CANVAS_CONFIG.WIDTH;
 const baseHeight = TRAY_CANVAS_CONFIG.HEIGHT;
+// macOS 的 tray-icon 会把图标高度固定缩放到 18pt（宽度按比例），而速率图内容是
+// 按 16pt 画的。上下各留 1 个基准像素（2x 下就是 2px），画布变成 66×18（132×36），
+// 内容渲染出来正好 16pt。与原来 Rust 侧 pad_for_tray 的做法一致。
+const basePaddingY = 1;
 const baseIconWidth = TRAY_CANVAS_CONFIG.ICON_WIDTH;
 const baseIconHeight = TRAY_CANVAS_CONFIG.ICON_HEIGHT;
 const baseTextWidth = TRAY_CANVAS_CONFIG.TEXT_WIDTH;
@@ -39,7 +43,8 @@ export const draw = async ({
   }
 
   const width = baseWidth * scale;
-  const height = baseHeight * scale;
+  const height = (baseHeight + basePaddingY * 2) * scale;
+  const paddingY = basePaddingY * scale;
   const textColor = theme === APP_THEME.LIGHT ? lightTextColor : darkTextColor;
   const fontSize = baseFontSize * scale + 1;
   const textFont = `${fontSize}px "${fontFamily}"`;
@@ -59,7 +64,7 @@ export const draw = async ({
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   if (icon) {
-    ctx.drawImage(icon, 0, 0, iconWidth, iconHeight);
+    ctx.drawImage(icon, 0, paddingY, iconWidth, iconHeight);
   }
 
   ctx.font = textFont;
@@ -68,11 +73,11 @@ export const draw = async ({
   ctx.fillStyle = textColor;
 
   const uploadText = `${bytesToSize(uploadSpeed)}/s`;
-  const uploadTextY = 0;
+  const uploadTextY = paddingY;
   ctx.fillText(uploadText, width, uploadTextY, textWidth);
 
   const downloadText = `${bytesToSize(downloadSpeed)}/s`;
-  const downloadTextY = baseFontSize * scale + 0.5;
+  const downloadTextY = paddingY + baseFontSize * scale + 0.5;
   ctx.fillText(downloadText, width, downloadTextY, textWidth);
 
   const result = transferCanvasTo(canvas, resultType);
