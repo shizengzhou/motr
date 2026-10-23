@@ -1,5 +1,6 @@
 mod commands;
 mod config_manager;
+mod energy;
 mod ipc;
 mod logging;
 mod protocol;
@@ -11,6 +12,7 @@ use std::sync::Mutex;
 use tauri::RunEvent;
 
 use commands::{apply_upnp, protocol_ready, shutdown_upnp, trash_item};
+use energy::{start_power_save_blocker, stop_power_save_blocker};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -46,6 +48,8 @@ pub fn run() {
         .manage(Mutex::new(upnp::UpnpState::default()))
         // 下载协议：前端就绪前攒下的协议链接（见 protocol.rs）
         .manage(Mutex::new(protocol::ProtocolState::default()))
+        // 「有下载时不休眠」持有的电源断言（见 energy.rs）
+        .manage(energy::EnergyState::default())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_single_instance::init(|app, args, cwd| {
@@ -69,7 +73,9 @@ pub fn run() {
             trash_item,
             apply_upnp,
             protocol_ready,
-            shutdown_upnp
+            shutdown_upnp,
+            start_power_save_blocker,
+            stop_power_save_blocker
         ])
         .setup(|app| {
             let handle = app.handle().clone();
@@ -120,6 +126,8 @@ pub fn run() {
             RunEvent::Exit => {
                 // 退出前尽力撤销路由器上的端口映射（同步跑完，见 upnp.rs）
                 upnp::shutdown(app);
+                // 释放电源断言（原项目 quit 前也会 stopPowerSaveBlocker）
+                energy::shutdown(app);
             }
             // 点 Dock 图标：把窗口显示出来（原项目 app.on('activate') -> showPage）
             #[cfg(target_os = "macos")]

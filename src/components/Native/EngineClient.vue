@@ -70,6 +70,15 @@ export default {
         window.application?.trayManager?.setActive(val).catch((err) => {
           console.warn('[Motr] update tray active icon fail:', err);
         });
+
+        // 有下载时阻止系统休眠（原版在同一事件里调 EnergyManager）：
+        // 只阻止空闲休眠，不阻止熄屏，下载全部结束后立即释放
+        const energyManager = window.application?.energyManager;
+        if (val) {
+          energyManager?.startPowerSaveBlocker();
+        } else {
+          energyManager?.stopPowerSaveBlocker();
+        }
       }
     },
     speed() {

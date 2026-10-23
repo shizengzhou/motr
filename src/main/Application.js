@@ -19,6 +19,7 @@ import MenuManager from './MenuManager';
 import TrayManager from './TrayManager';
 import UpdateManager from './UpdateManager';
 import AutoLaunchManager from './AutoLaunchManager';
+import EnergyManager from './EnergyManager';
 import ProtocolManager from './ProtocolManager';
 import { getLocaleManager } from '../components/Locale';
 import { getLanguage } from '@shared/locales';
@@ -50,6 +51,8 @@ export default class Application extends EventEmitter {
 
       // 开机自启：只在设置页保存时改写系统登录项
       this.initAutoLaunchManager();
+
+      this.initEnergyManager();
 
       // 先注册菜单/托盘命令的本地处理，避免托盘刚建好就点击时走前端兜底
       this.handleCommands();
@@ -199,6 +202,10 @@ export default class Application extends EventEmitter {
 
   initAutoLaunchManager() {
     this.autoLaunchManager = new AutoLaunchManager({ application: this });
+  }
+
+  initEnergyManager() {
+    this.energyManager = new EnergyManager();
   }
 
   async initProtocolManager() {

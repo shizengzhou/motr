@@ -57,3 +57,6 @@ url = "2"
 igd-next = { version = "0.18.0", features = ["aio_tokio"] }
 # 续租用的 tokio::time::sleep。tauri 自己的运行时就是 tokio，不新增编译量
 tokio = { version = "1", features = ["time"] }
+# 「有下载时不休眠」（对应原项目 EnergyManager 的 powerSaveBlocker）：
+# macOS IOPMAssertion / Windows SetThreadExecutionState / Linux D-Bus inhibit
+keepawake = "0.6"
