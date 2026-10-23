@@ -15,6 +15,6 @@
     ]
   },
   "bundle": {
-    "resources": ["resources/**/*", "windows/aria2.conf"]
+    "resources": ["windows/aria2.conf"]
   }
 }

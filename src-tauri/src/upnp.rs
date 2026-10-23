@@ -69,14 +69,15 @@ pub struct UpnpState {
 /// 期望的映射集合：开关开着才有（对应原项目 `getUPnPMappingEnabled()`）。
 ///
 /// 两个端口 × 两种协议，最多 4 条；配置里两个端口写成同一个值时去重。
-pub fn desired_mappings(enabled: bool, ports: config_manager::ListenPorts) -> Vec<Mapping> {
+pub fn desired_mappings(enabled: bool, ports: (u16, u16)) -> Vec<Mapping> {
     if !enabled {
         return Vec::new();
     }
 
     let mut mappings: Vec<Mapping> = Vec::new();
+    let (bt, dht) = ports;
 
-    for port in [ports.bt, ports.dht] {
+    for port in [bt, dht] {
         // 0 不是可用的监听端口（aria2 里 0 表示"随机"，我们拿不到实际值）
         if port == 0 {
             continue;
@@ -425,8 +426,8 @@ mod tests {
     use super::*;
 
     /// 测试里快速构造一对端口（生产代码只从 system.json 读，没有这种用法）
-    fn ports(bt: u16, dht: u16) -> config_manager::ListenPorts {
-        config_manager::ListenPorts { bt, dht }
+    fn ports(bt: u16, dht: u16) -> (u16, u16) {
+        (bt, dht)
     }
 
     /// 开关关着就不该有任何映射（原项目关掉时会 stopUPnPMapping + closeClient）

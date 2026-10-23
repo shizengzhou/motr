@@ -53,7 +53,6 @@
       "debugApplicationIdSuffix": ".debug"
     },
     "externalBin": ["binaries/aria2c"],
-    "resources": ["resources/**/*"],
     "createUpdaterArtifacts": true
   },
   "plugins": {

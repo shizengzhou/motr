@@ -1,5 +1,5 @@
 {
   "bundle": {
-    "resources": ["resources/**/*", "macos/aria2.conf"]
+    "resources": ["macos/aria2.conf"]
   }
 }
