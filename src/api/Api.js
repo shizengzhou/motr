@@ -415,4 +415,13 @@ export default class Api {
   batchForcePauseTask(params = {}) {
     return this.multicall('aria2.forcePause', params);
   }
+
+  async shutdown(options = {}) {
+    const { force = false } = options;
+    const { secret } = this.options;
+
+    const method = force ? 'forceShutdown' : 'shutdown';
+    const args = compactUndefined([secret]);
+    return this.client.call(method, ...args);
+  }
 }

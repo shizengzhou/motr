@@ -323,7 +323,7 @@ export default class Application extends EventEmitter {
   async stopEngine() {
     info('[Motr] stopEngine===>');
     try {
-      // await this.engineClient.shutdown({ force: true });
+      await api.shutdown({ force: true });
       info('[Motr] stopEngine.setImmediate===>');
       setTimeout(() => {
         this.engine.stop();
@@ -445,7 +445,7 @@ export default class Application extends EventEmitter {
       const promises = [
         this.stopEngine(),
         this.shutdownUPnPManager(),
-        // this.energyManager.stopPowerSaveBlocker(),
+        this.energyManager.stopPowerSaveBlocker(),
         this.trayManager.destroy(),
       ];
 
