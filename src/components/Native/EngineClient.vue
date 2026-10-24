@@ -306,16 +306,6 @@ export default {
       this.$store.dispatch('app/fetchEngineInfo');
       this.$store.dispatch('app/fetchEngineOptions');
 
-      // 「启动时自动开始未完成的任务」：等价原项目 Application.autoResumeTask()
-      //（它在 application:initialized 里调 engineClient.call('unpauseAll')）。
-      // 放在引擎信息/选项拉完之后，是因为我们的 aria2 RPC 客户端在前端
-      //（api.client 在 Api.init 里异步建好），要等它连上才能发 unpauseAll。
-      // 只在启动时做一次，之后改这个开关是下次启动生效。
-      if (this.resumeAllWhenAppLaunched) {
-        console.info('[Motr] auto resume unfinished tasks');
-        this.$store.dispatch('task/resumeAllTask');
-      }
-
       this.startPolling();
     }, 100);
   },

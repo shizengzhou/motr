@@ -22,9 +22,6 @@ pub fn run() {
         // 自动更新：检查 → 下载 → 安装 → 重启（配置见 tauri.conf.json 的 plugins.updater）
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
-        // 应用自身的 HTTP 请求（Tracker 列表抓取等）：请求由 Rust 发出，
-        // 不受 webview 的 CORS 限制，且能按请求指定代理
-        .plugin(tauri_plugin_http::init())
         .plugin(
             tauri_plugin_window_state::Builder::new()
                 // 只保存尺寸和位置（恢复由前端按「恢复窗口状态」开关调用

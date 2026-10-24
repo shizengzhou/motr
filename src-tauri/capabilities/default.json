@@ -39,17 +39,6 @@
     "notification:default",
     "updater:default",
     "process:default",
-    {
-      "identifier": "http:default",
-      "allow": [
-        {
-          "url": "https://*"
-        },
-        {
-          "url": "http://*"
-        }
-      ]
-    },
     "store:default",
     "shell:default",
     "shell:allow-kill",

@@ -10,9 +10,10 @@ import { openUrl } from '@tauri-apps/plugin-opener';
 import { relaunch } from '@tauri-apps/plugin-process';
 import { Buffer } from 'buffer';
 import { EventEmitter } from 'events';
+import { isEmpty } from 'lodash';
 import ConfigManager from './ConfigManager';
 import Context from './Context';
-import { APP_RUN_MODE } from '../shared/constants';
+import { APP_RUN_MODE, AUTO_SYNC_TRACKER_INTERVAL } from '../shared/constants';
 import is from '@/utils/is';
 import ThemeManager from './ThemeManager';
 import MenuManager from './MenuManager';
@@ -25,6 +26,13 @@ import { getLocaleManager } from '../components/Locale';
 import { getLanguage } from '@shared/locales';
 import Engine from './Engine';
 import WindowManager from './WindowManager';
+import { checkIsNeedRun } from '../shared/utils';
+import {
+  convertTrackerDataToComma,
+  fetchBtTrackerFromSource,
+  reduceTrackerString,
+} from '../shared/utils/tracker';
+import api from '../api';
 
 const i18n = getLocaleManager().getI18n();
 
@@ -40,6 +48,9 @@ export default class Application extends EventEmitter {
         this.initConfigManager(),
         this.initThemeManager(),
       ]);
+
+      await this.startEngine();
+      await this.initApi();
 
       await this.initWindowManager();
 
@@ -61,12 +72,18 @@ export default class Application extends EventEmitter {
       await this.initTrayManager();
       await this.initMenuManager();
 
-      this.startEngine();
       this.handleEvents();
+
+      this.emit('application:initialized');
     } catch (err) {
       console.error('[Motr] Application.init error:', err);
       throw err;
     }
+  }
+
+  async initApi() {
+    const config = await api.loadConfig();
+    await api.init(config);
   }
 
   handleCommands() {
@@ -229,11 +246,78 @@ export default class Application extends EventEmitter {
   }
 
   async handleEvents() {
+    this.once('application:initialized', async () => {
+      await this.autoSyncTracker();
+
+      await this.autoResumeTask();
+    });
+
+    await this.configManager.userConfig.onChange(() =>
+      this.handleConfigChange('user')
+    );
+    await this.configManager.systemConfig.onChange(() =>
+      this.handleConfigChange('system')
+    );
+
     await Promise.all([
       this.watchThemeChange(),
       this.watchLocaleChange(),
       this.watchRunModeChange(),
     ]);
+  }
+
+  async autoResumeTask() {
+    const enabled = await this.configManager.getUserConfig(
+      'resume-all-when-app-launched'
+    );
+    if (!enabled) {
+      return;
+    }
+
+    api.client.call('unpauseAll');
+  }
+
+  handleConfigChange(configName) {
+    this.sendCommandToAll('application:update-preference-config', {
+      configName,
+    });
+  }
+
+  async autoSyncTracker() {
+    const enable = await this.configManager.getUserConfig('auto-sync-tracker');
+    const lastTime = await this.configManager.getUserConfig(
+      'last-sync-tracker-time'
+    );
+    const result = checkIsNeedRun(enable, lastTime, AUTO_SYNC_TRACKER_INTERVAL);
+    console.info('[Motr] auto sync tracker checkIsNeedRun:', result);
+    if (!result) {
+      return;
+    }
+
+    const source = await this.configManager.getUserConfig('tracker-source');
+    if (isEmpty(source)) {
+      return;
+    }
+
+    setTimeout(() => {
+      fetchBtTrackerFromSource(source)
+        .then(async (data) => {
+          console.warn('[Motr] auto sync tracker data:', data);
+          if (!data || data.length === 0) {
+            return;
+          }
+
+          let tracker = convertTrackerDataToComma(data);
+          tracker = reduceTrackerString(tracker);
+          await this.savePreference({
+            'bt-tracker': tracker,
+            'last-sync-tracker-time': Date.now(),
+          });
+        })
+        .catch((err) => {
+          console.warn('[Motr] auto sync tracker failed:', err.message);
+        });
+    }, 500);
   }
 
   async stopEngine() {
@@ -261,7 +345,7 @@ export default class Application extends EventEmitter {
         systemConfig,
         userConfig,
       });
-      this.engine.start();
+      await this.engine.start();
     } catch (err) {
       message(i18n.t('app.system-error-message', { message: err.message }), {
         title: i18n.t('app.system-error-title'),
@@ -326,6 +410,10 @@ export default class Application extends EventEmitter {
         });
       }
     );
+  }
+
+  async savePreference(config = {}) {
+    await api.savePreference(config);
   }
 
   async reset() {

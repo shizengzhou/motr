@@ -23,7 +23,31 @@ export default class Api {
     // this.config = await this.loadConfig();
 
     this.client = this.initClient(config);
-    this.client.open();
+
+    // aria2 的 RPC 不是 spawn 完就立刻可连，启动初期会有短暂 refused；
+    // 重试到端口就绪，避免一个未处理的 WebSocket error 让整个客户端失联
+    await this.connect();
+  }
+
+  async connect({ attempts = 20, interval = 250 } = {}) {
+    for (let attempt = 1; attempt <= attempts; attempt += 1) {
+      try {
+        // eslint-disable-next-line no-await-in-loop
+        await this.client.open();
+        return;
+      } catch (err) {
+        if (attempt === attempts) {
+          console.warn(
+            `[Motr] connect aria2 RPC failed after ${attempts} attempts:`,
+            err
+          );
+          return;
+        }
+
+        // eslint-disable-next-line no-await-in-loop
+        await new Promise((resolve) => setTimeout(resolve, interval));
+      }
+    }
   }
 
   loadConfigFromLocalStorage() {

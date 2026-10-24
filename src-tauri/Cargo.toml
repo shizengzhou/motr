@@ -28,14 +28,12 @@ tauri = { version = "2.12.0", features = [
 ] }
 tauri-plugin-log = "2"
 trash = "5.2.9"
-tauri-plugin-http = "2"
 tauri-plugin-opener = "2"
 tauri-plugin-os = "2"
 tauri-plugin-dialog = "2"
 tauri-plugin-store = "2"
 tauri-plugin-shell = "2"
 tauri-plugin-clipboard-manager = "2"
-# 文件关联递进来的 .torrent 要 base64 后交给前端（见 src/ipc.rs 的 torrent_payload）
 base64 = "0.22"
 tauri-plugin-notification = "2"
 tauri-plugin-fs = "2"
