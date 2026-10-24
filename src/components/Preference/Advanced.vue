@@ -399,7 +399,6 @@
 </template>
 
 <script>
-import { invoke } from '@tauri-apps/api/core';
 import is from '@/utils/is';
 import { confirm } from '@/utils/dialog';
 import { mapState } from 'vuex';
@@ -752,17 +751,6 @@ export default {
             this.$store.dispatch('app/fetchEngineOptions');
             this.syncFormConfig();
             this.$msg.success(this.$t('preferences.save-success-message'));
-
-            // UPnP 由 Rust 侧改路由器上的端口映射（见 src-tauri/src/upnp.rs）。
-            // 只有开关本身要即时通知：它不在 needRestartKeys 里；
-            // 两个监听端口的改动会触发重启（下面 restartApp），新进程启动时
-            // upnp::apply 自然按新端口映射，这里再调一次只会白跑一趟。
-            // 放在 .then 里是要等配置先落盘
-            if ('enableUpnp' in data) {
-              invoke('apply_upnp').catch((err) => {
-                console.warn('[Motr] apply upnp fail:', err);
-              });
-            }
 
             // 下载协议同理：Rust 侧把 Motr 注册成 magnet: / thunder: 的
             // 默认客户端，或取消注册（见 src-tauri/src/protocol.rs）。

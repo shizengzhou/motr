@@ -88,22 +88,22 @@ export default class Application extends EventEmitter {
 
   handleCommands() {
     this.on('help:official-website', async () => {
-      const url = 'https://motrix.app/';
+      const url = 'https://shizengzhou.github.io/motr/';
       await openUrl(url);
     });
 
     this.on('help:manual', async () => {
-      const url = 'https://motrix.app/manual';
+      const url = 'https://github.com/shizengzhou/motr#readme';
       await openUrl(url);
     });
 
     this.on('help:release-notes', async () => {
-      const url = 'https://motrix.app/release';
+      const url = 'https://github.com/shizengzhou/motr/releases';
       await openUrl(url);
     });
 
     this.on('help:report-problem', async () => {
-      const url = 'https://motrix.app/report';
+      const url = 'https://github.com/shizengzhou/motr/issues';
       await openUrl(url);
     });
 
@@ -263,6 +263,8 @@ export default class Application extends EventEmitter {
       this.watchThemeChange(),
       this.watchLocaleChange(),
       this.watchRunModeChange(),
+      this.watchUPnPEnabledChange(),
+      this.watchUPnPPortsChange(),
     ]);
   }
 
@@ -410,6 +412,46 @@ export default class Application extends EventEmitter {
         });
       }
     );
+  }
+
+  // 「启用 UPnP」开关：对齐原项目 watchUPnPEnabledChange —— 配置一变就同步
+  // 路由器上的映射（关掉时撤销、打开时重建，见 src-tauri/src/upnp.rs）
+  async watchUPnPEnabledChange() {
+    const { userConfig } = this.configManager;
+    const key = 'enable-upnp';
+    this.configListeners[key] = await userConfig.onKeyChange(
+      key,
+      async (newValue) => {
+        info(`[Motr] detected ${key} value change event: ${newValue}`);
+        await this.applyUPnPMapping();
+      }
+    );
+  }
+
+  // 两个监听端口：对齐原项目 watchUPnPPortsChange。Rust 侧按「已映射 vs 期望」
+  // 做差集，改端口时就是撤旧的、建新的（原项目是显式 unmap(old) + map(new)）
+  async watchUPnPPortsChange() {
+    const { systemConfig } = this.configManager;
+
+    for (const key of ['listen-port', 'dht-listen-port']) {
+      // eslint-disable-next-line no-await-in-loop
+      this.configListeners[key] = await systemConfig.onKeyChange(
+        key,
+        async (newValue) => {
+          info(`[Motr] detected ${key} value change event: ${newValue}`);
+          await this.applyUPnPMapping();
+        }
+      );
+    }
+  }
+
+  // 让路由器上的映射与配置对齐（enable-upnp 与两个监听端口）
+  async applyUPnPMapping() {
+    try {
+      await invoke('apply_upnp');
+    } catch (err) {
+      warn(`[Motr] apply upnp fail: ${err.message}`);
+    }
   }
 
   async savePreference(config = {}) {

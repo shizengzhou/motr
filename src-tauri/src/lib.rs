@@ -11,7 +11,7 @@ use std::sync::Mutex;
 
 use tauri::RunEvent;
 
-use commands::{apply_upnp, protocol_ready, shutdown_upnp, trash_item};
+use commands::{apply_upnp, protocol_ready, shutdown_upnp, toggle_devtools, trash_item};
 use energy::{start_power_save_blocker, stop_power_save_blocker};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -71,6 +71,7 @@ pub fn run() {
             apply_upnp,
             protocol_ready,
             shutdown_upnp,
+            toggle_devtools,
             start_power_save_blocker,
             stop_power_save_blocker
         ])

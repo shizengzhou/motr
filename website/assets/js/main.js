@@ -10,6 +10,8 @@
       "hero.new": "New",
       "hero.features": "View Motr features",
       "hero.other": "It’s free and open source, Welcome fork or PR",
+      "hero.poster": "assets/img/screenshot-task-list-downloading-en@2x.png",
+      "hero.posterAlt": "Motr task list",
       "features.title": "Features",
       "feat.1": "Simple and clear user interface",
       "feat.2": "Support BitTorrent & Magnet",
@@ -25,7 +27,6 @@
       "feat.13": "Dark mode",
       "feat.14": "Delete related files when removing tasks (optional)",
       "feat.15": "I18n",
-      "feat.16": "More features in development",
 
     },
     zh: {
@@ -35,6 +36,8 @@
       "hero.new": "New",
       "hero.features": "查看 Motr 特性介绍",
       "hero.other": "免费开源，欢迎 Fork 和 PR",
+      "hero.poster": "assets/img/screenshot-task-list-downloading-zh@2x.png",
+      "hero.posterAlt": "Motr 任务列表",
       "features.title": "特性",
       "feat.1": "简洁明了的图形操作界面",
       "feat.2": "支持BT和磁力链任务",
@@ -50,7 +53,6 @@
       "feat.13": "深色模式",
       "feat.14": "移除任务时可同时删除相关文件",
       "feat.15": "国际化",
-      "feat.16": "更多特性开发中",
 
     }
   };
@@ -63,6 +65,8 @@
   var STORAGE_KEY = "motr.locale";
   var page = document.body.getAttribute("data-page") || "home";
   var nodes = document.querySelectorAll("[data-i18n]");
+  var srcNodes = document.querySelectorAll("[data-i18n-src]");
+  var altNodes = document.querySelectorAll("[data-i18n-alt]");
   var localeLinks = document.querySelectorAll(".locales [data-lang]");
 
   function setLocale(lang) {
@@ -71,6 +75,16 @@
     nodes.forEach(function (node) {
       var key = node.getAttribute("data-i18n");
       if (dict[key]) node.textContent = dict[key];
+    });
+
+    srcNodes.forEach(function (node) {
+      var key = node.getAttribute("data-i18n-src");
+      if (dict[key]) node.src = dict[key];
+    });
+
+    altNodes.forEach(function (node) {
+      var key = node.getAttribute("data-i18n-alt");
+      if (dict[key]) node.setAttribute("alt", dict[key]);
     });
 
     document.documentElement.lang = lang === "zh" ? "zh-CN" : "en";

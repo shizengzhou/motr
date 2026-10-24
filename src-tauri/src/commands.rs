@@ -1,4 +1,4 @@
-use tauri::AppHandle;
+use tauri::{AppHandle, Manager};
 
 use crate::{protocol, upnp};
 
@@ -6,6 +6,24 @@ use crate::{protocol, upnp};
 pub fn protocol_ready(app: AppHandle) -> Result<(), String> {
     protocol::ready(&app);
     Ok(())
+}
+
+/// 切换主窗口开发者工具（菜单 `help.toggle-dev-tools`）。
+///
+/// Tauri 的 PredefinedMenuItem 没有 Electron 的 `toggledevtools` role，
+/// 所以要显式调 WebView 的 devtools API；Cargo.toml 里已开 `devtools` feature。
+#[tauri::command]
+pub fn toggle_devtools(app: AppHandle) {
+    let Some(window) = app.get_webview_window("main") else {
+        log::warn!("[Motr] 找不到主窗口，无法切换开发者工具");
+        return;
+    };
+
+    if window.is_devtools_open() {
+        window.close_devtools();
+    } else {
+        window.open_devtools();
+    }
 }
 
 #[tauri::command]

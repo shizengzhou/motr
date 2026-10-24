@@ -1,0 +1,58 @@
+# 把 website/ 部署到 GitHub Pages
+#
+# 站点地址：https://shizengzhou.github.io/motr/
+#
+# 首次使用前，在仓库 Settings → Pages → Build and deployment 里
+# 把 Source 设为「GitHub Actions」。
+#
+# 触发方式：
+#   1. push 到 main 且改动涉及 website/ 时自动部署
+#   2. Actions 页面手动运行（workflow_dispatch）
+
+name: Deploy website
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'website/**'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Deploy to GitHub Pages
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      # 静态站点不需要构建，直接把 website/ 作为产物上传
+      - name: Remove macOS metadata
+        run: rm -f website/.DS_Store website/assets/.DS_Store
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: website
+
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4

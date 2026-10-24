@@ -4,6 +4,7 @@ import {
   PredefinedMenuItem,
   Submenu,
 } from '@tauri-apps/api/menu';
+import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 
 import { getLocaleManager } from '@/components/Locale';
@@ -128,6 +129,20 @@ export default class MenuManager {
         this.items[node.id] = submenu;
       }
       return submenu;
+    }
+
+    // Tauri 的 PredefinedMenuItem 没有 Electron 的 toggledevtools，
+    // 单独交给 Rust 命令切换主窗口的 WebView 开发者工具
+    if (node.role === 'toggledevtools') {
+      const item = await MenuItem.new({
+        id: node.id,
+        text,
+        action: () => invoke('toggle_devtools'),
+      });
+      if (node.id) {
+        this.items[node.id] = item;
+      }
+      return item;
     }
 
     const predefined = ROLE_ITEMS[node.role];

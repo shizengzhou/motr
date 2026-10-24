@@ -1,7 +1,11 @@
 <template>
   <el-row class="copyright">
     <el-col :span="6" class="copyright-left">
-      <a target="_blank" rel="noopener noreferrer" href="https://motrix.app/">
+      <a
+        target="_blank"
+        rel="noopener noreferrer"
+        href="https://shizengzhou.github.io/motr/"
+      >
         &copy;{{ year }} Motr
       </a>
     </el-col>
@@ -9,28 +13,28 @@
       <a
         target="_blank"
         rel="noopener noreferrer"
-        href="https://motrix.app/license"
+        href="https://github.com/shizengzhou/motr/blob/main/LICENSE"
       >
         {{ $t('about.license') }}
       </a>
       <a
         target="_blank"
         rel="noopener noreferrer"
-        href="https://motrix.app/about"
+        href="https://github.com/shizengzhou/motr"
       >
         {{ $t('about.about') }}
       </a>
       <a
         target="_blank"
         rel="noopener noreferrer"
-        href="https://motrix.app/support"
+        href="https://github.com/shizengzhou/motr/issues"
       >
         {{ $t('about.support') }}
       </a>
       <a
         target="_blank"
         rel="noopener noreferrer"
-        href="https://motrix.app/release"
+        href="https://github.com/shizengzhou/motr/releases"
       >
         {{ $t('about.release') }}
       </a>

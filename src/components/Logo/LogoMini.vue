@@ -1,6 +1,6 @@
 <template>
   <h1 class="logo-mini">
-    <a target="_blank" href="https://motrix.app/">
+    <a target="_blank" href="https://shizengzhou.github.io/motr/">
       <svg
         xmlns="http://www.w3.org/2000/svg"
         width="28"

@@ -353,6 +353,10 @@ img {
   margin-right: 16px;
 }
 
+.copyright a {
+  color: var(--accent);
+}
+
 .locales a {
   color: var(--accent);
 }
