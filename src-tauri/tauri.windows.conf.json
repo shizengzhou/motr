@@ -15,6 +15,33 @@
     ]
   },
   "bundle": {
-    "resources": ["windows/aria2.conf"]
+    "targets": ["nsis"],
+    "resources": ["windows/aria2.conf"],
+    "windows": {
+      "nsis": {
+        "languages": [
+          "SimpChinese",
+          "TradChinese",
+          "English",
+          "Arabic",
+          "Bulgarian",
+          "Dutch",
+          "Farsi",
+          "French",
+          "German",
+          "Italian",
+          "Japanese",
+          "Korean",
+          "Norwegian",
+          "PortugueseBR",
+          "Russian",
+          "Spanish",
+          "Turkish",
+          "Ukrainian",
+          "Vietnamese"
+        ],
+        "displayLanguageSelector": true
+      }
+    }
   }
 }
