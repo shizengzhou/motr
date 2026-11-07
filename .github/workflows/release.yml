@@ -222,15 +222,29 @@ jobs:
             | --- | --- |
             | macOS（Apple 芯片） | `Motr_*_aarch64.dmg` |
             | macOS（Intel） | `Motr_*_x64.dmg` |
-            | Windows（x64） | `Motr_*_x64-setup.exe` |
+            | Windows（x64） | `Motr_*_x64-setup.zip`（解压后运行安装程序） |
             | Linux（x64） | `Motr_*_amd64.AppImage` / `.deb` |
             | Linux（arm64） | `Motr_*_aarch64.AppImage` / `.deb` |
-
-            macOS 若提示「已损坏」或「无法验证开发者」，可执行：
-            `xattr -dr com.apple.quarantine /Applications/Motr.app`
 
             应用会通过 `latest.json` 自动检查更新。
           releaseDraft: false
           prerelease: false
           includeUpdaterJson: true
           args: ${{ matrix.args }}
+
+      - name: 打包 Windows 安装包为 zip 并上传
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $setup = Get-ChildItem -Path "src-tauri\target" -Filter "*-setup.exe" -Recurse -File |
+            Select-Object -First 1
+          if (-not $setup) {
+            Write-Error "未找到 NSIS 安装包"
+            exit 1
+          }
+          $zip = Join-Path $setup.DirectoryName ($setup.BaseName + ".zip")
+          Compress-Archive -Path $setup.FullName -DestinationPath $zip -Force
+          Write-Host "已生成 $zip"
+          gh release upload "${{ steps.ver.outputs.tag }}" $zip --clobber
