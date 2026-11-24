@@ -6,7 +6,9 @@
 #
 # 仓库 Secrets：
 #   TAURI_SIGNING_PRIVATE_KEY           必填，更新包签名私钥（pnpm tauri signer generate -w ~/.tauri/motr.key 生成）
-#   TAURI_SIGNING_PRIVATE_KEY_PASSWORD  私钥口令（生成时留空则不配）
+#                                       必须与 tauri.conf.json 的 plugins.updater.pubkey 配对（同一密钥对的 .pub），
+#                                       否则客户端校验会报 "signature was created with a different key"
+#   TAURI_SIGNING_PRIVATE_KEY_PASSWORD  私钥口令；~/.tauri/motr.key 是加密私钥，必须配置（留空会让构建报 Wrong password）
 #
 #   macOS 代码签名（可选）：
 #   APPLE_CERTIFICATE                   Developer ID Application 证书 .p12 的 base64

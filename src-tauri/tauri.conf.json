@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "Motr",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "identifier": "com.shizeng.Motr",
   "build": {
     "frontendDist": "../dist",
@@ -60,7 +60,7 @@
       "endpoints": [
         "https://github.com/shizengzhou/motr/releases/latest/download/latest.json"
       ],
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDg3Nzg3MjQzMzYwNTFENDIKUldSQ0hRVTJRM0o0aDk1YjNHdVR6Z0JwdWtmZzVkUnRFQ05lYWUvdEk4bnMxZEQ1RU55REs1Z04K"
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEE1NERFQzgwNkFCRUZBRkQKUldUOStyNXFnT3hOcFJGcVJaSmtiQjl0R0M5RFkxRkVVREROTzU4ZENnbkdYdWFCbWhJZlFuZmwK"
     },
     "deep-link": {
       "desktop": {
